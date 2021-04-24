@@ -19,13 +19,19 @@ KULbg <- "#116e8a"
 
 
 
-#setting op same datavariable with claim amount instead of freq 
+###loading in data and setting up names and types###
 toledo <- read.csv("toledo files//Assignment.csv", ",", header = T)
 Mdata <- read.csv("data.csv", ",", header = T)
+shape_data <- sf::st_read("geomjson//inspost.geojson", 
+                         layer = "inspost", stringsAsFactors = F)
+shape_data <- st_transform(shape_data, "+proj=longlat +datum=WGS84")
+class(shape_data)
+
+
 Mdata$claimAm <- toledo$chargtot
 data <- Mdata %>% select(-freq, - freq_ann)
 
-#set to same factor as rdataset
+# factor as rdataset
 data <- as.data.frame(data)
 Data <- data %>%
  mutate(across(c(X,ageph, expo, lnexpo, postal), as.numeric)) %>%
@@ -36,8 +42,14 @@ Data_nozero <- Data %>% select(-X, -expo, -lnexpo)
 Data_nozero <- subset(Data_nozero, Data$claimAm != 0)
 dim(Data_nozero)
 
+#binning postalcode and age 
+
+
+
+
+
 #split data in test and train data with stratified sampling 
-# the dependend variable is factorized 
+# the dependend variable is factorized to do the split 
 set.seed(666)
 trainIndex <- createDataPartition(Data_nozero$claimAm, p=0.8, list = FALSE, times=1, group = 10)
 
@@ -81,20 +93,8 @@ Data %>% group_by(sexph) %>%summarise(emp_var_claimAm = sum((claimAm - sum(claim
 # GLM model to fit the data using gamma distribution
 
 
-lm <- lm(claimAm ~ ., data= Data_nozero)
-lm %>% broom::tidy()
+lm <- lm(claimAm ~ ., data= train)
 
-
-glm <- glm(claimAm ~ ., offset = log(expo), family = gaussian(), data = Data_nozero)
-
-glm %>% broom::tidy()
-glm %>% broom::augment(type.predict = "response")
-summary(glm)
-plot(glm)
-Data[11749, ]
-glm <- glm(claimAm ~ postal + power + cover + sportc +  fleet + use , offset = log(expo), family = Gamma(link ="inverse"), data = Data_nozero)
-plot(glm)
-
-gam(claimAm ~ postal, family = gaussian(), data =Data)
-
+glm <- train(claimAm ~ ., data = train, family= Gamma("log"),
+            method = "glm")
 
