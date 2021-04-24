@@ -13,6 +13,7 @@ library(moments)
 library(mgcv)
 library(caTools)
 library(caret)
+library(kable)
 hgd()
 hgd_browse()
 KULbg <- "#116e8a"
@@ -22,15 +23,12 @@ KULbg <- "#116e8a"
 ###loading in data and setting up names and types###
 toledo <- read.csv("toledo files//Assignment.csv", ",", header = T)
 Mdata <- read.csv("data.csv", ",", header = T)
-shape_data <- sf::st_read("geomjson//inspost.geojson", 
-                         layer = "inspost", stringsAsFactors = F)
-shape_data <- st_transform(shape_data, "+proj=longlat +datum=WGS84")
-class(shape_data)
+belgium_shape_sf <- st_read('Severity_Analysis//shape file Belgie postcodes//npc96_region_Project1.shp',quiet = TRUE)
 
-
+belgium_shape_sf<- st_transform(belgium_shape_sf, "+proj=longlat +datum=WGS84")
+class(belgium_shape_sf)
 Mdata$claimAm <- toledo$chargtot
 data <- Mdata %>% select(-freq, - freq_ann)
-
 # factor as rdataset
 data <- as.data.frame(data)
 Data <- data %>%
@@ -42,11 +40,23 @@ Data_nozero <- Data %>% select(-X, -expo, -lnexpo)
 Data_nozero <- subset(Data_nozero, Data$claimAm != 0)
 dim(Data_nozero)
 
+
+# map of belgium
+ggplot(belgium_shape_sf)+
+geom_sf()+
+ggtitle("WelcometoBelgium!")+
+theme_bw()
+
+simple_shp <- st_simplify(belgium_shape_sf, dTolerance = 0.00001)
+qtm(simple_shp)
+
+
 #binning postalcode and age 
 
+post_expo <- Data_nozero %>% group_by(postal) %>% summarize(num = n())
+post_expo%>%slice(1:5)
 
-
-
+belgium_shape_sf <- left_join(belgium_shape_sf, post_expo, by = c("POSTCODE" = "postal"))
 
 #split data in test and train data with stratified sampling 
 # the dependend variable is factorized to do the split 
