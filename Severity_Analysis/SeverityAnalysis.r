@@ -11,6 +11,8 @@ library(PCAmixdata)
 library(sf)
 library(moments)
 library(mgcv)
+library(caTools)
+library(caret)
 hgd()
 hgd_browse()
 KULbg <- "#116e8a"
@@ -29,23 +31,35 @@ Data <- data %>%
  mutate(across(c(X,ageph, expo, lnexpo, postal), as.numeric)) %>%
  mutate(across(c(agecar, sexph,power, split,  fuel, use, fleet, sportc, cover), as.factor))
 
-Data <- as_tibble(Data)
+Data_nozero <- Data %>% select(-X, -expo, -lnexpo)
+
+Data_nozero <- subset(Data_nozero, Data$claimAm != 0)
+dim(Data_nozero)
+
+#split data in test and train data with stratified sampling 
+# the dependend variable is factorized 
+set.seed(666)
+trainIndex <- createDataPartition(Data_nozero$claimAm, p=0.8, list = FALSE, times=1, group = 10)
+
+train <- Data_nozero[trainIndex,]
+test <- Data_nozero[-trainIndex, ]
+
 
 # exploratory data analysis 
-ggplot(Data, aes(x = claimAm)) +
+ggplot(train, aes(x = claimAm)) +
 geom_density() +
 scale_x_continuous(trans = 'log2')
-Data %>% plot_bar()
-Data %>% plot_histogram()
+train %>% plot_bar()
+train %>% plot_histogram()
 
-Data <- as.data.frame(Data)
-Data_group<- splitmix(Data)
-Data_quanti <- as_tibble(Data[Data_group$col.quant])
-Data_quali <- as_tibble(Data[Data_group$col.qual])
+
+Data_group<- splitmix(Data_nozero)
+Data_quanti <- Data_nozero[Data_group$col.quant]
+Data_quali <- Data_nozero[Data_group$col.qual]
 
 tree <- hclustvar(X.quanti = Data_quanti, X.quali = Data_quali)
+plot(tree)
 
-dim(Data)
 # mean, variance skewnnes and kurtosis
 sapply(Data_quanti, mean)
 sapply(Data_quanti, var)
@@ -59,15 +73,13 @@ Data %>% group_by(sexph) %>%summarise(emp_var_claimAm = sum((claimAm - sum(claim
 
 
 #order the power and split
-Data$power <- ordered(data$power, levels = c("<66", "66-110", ">110"))
-Data$split <- ordered(data$split, levels = c("Once", "Twice", "Thrice", "Monthly"))
+#Data$power <- ordered(data$power, levels = c("<66", "66-110", ">110"))
+#Data$split <- ordered(data$split, levels = c("Once", "Twice", "Thrice", "Monthly"))
 
 
 
 # GLM model to fit the data using gamma distribution
-Data_nozero <- Data %>% select(-X)
-Data <- Data %>% select(-X)
-Data_nozero <- subset(Data_nozero, Data$claimAm != 0)
+
 
 lm <- lm(claimAm ~ ., data= Data_nozero)
 lm %>% broom::tidy()
@@ -81,6 +93,8 @@ summary(glm)
 plot(glm)
 Data[11749, ]
 glm <- glm(claimAm ~ postal + power + cover + sportc +  fleet + use , offset = log(expo), family = Gamma(link ="inverse"), data = Data_nozero)
-
-
 plot(glm)
+
+gam(claimAm ~ postal, family = gaussian(), data =Data)
+
+
