@@ -16,14 +16,29 @@ library(gridExtra)
 library(mgcv)
 library(classInt)
 library(evtree)
+library(rbin)
+library(caret)
 
 KUL <- "#116E8A"
 
 # Making the data ready 
-Data$chargtot <- NULL   # This analysis will only focus on frequency data
-Data[,15] <- ordered(Data[,15], levels = c("<66","66-110",">110"))
-colnames(Data) <- c("ageph","postal","expo","lnexpo","freq","freq_ann","agecar","sexph","fuel",
-                    "split","use","fleet","sportc","cover","power")
+# Data$chargtot <- NULL   # This analysis will only focus on frequency data
+# Data[,15] <- ordered(Data[,15], levels = c("<66","66-110",">110"))
+# colnames(Data) <- c("ageph","postal","expo","lnexpo","freq","freq_ann","agecar","sexph","fuel",
+#                     "split","use","fleet","sportc","cover","power")
+
+# Making ageph into a factor variable 
+breaks <- rbin_quantiles(data = Data, response = freq, predictor = ageph, bins = 10)$bins$cut_point
+break_p <- c(0,28,33,37,41,46,50,55,61,68,96)
+binned_age <- cut(Data$ageph, breaks = break_p, labels = breaks, 
+                  include.lowest = T, right = F)
+
+Data$ageph <- binned_age
+Data$ageph <- ordered(Data$ageph, levels = breaks)
+
+# Removing unnecessary variables 
+Data$lnexpo <- NULL
+Data$freq_ann <- NULL
 
 # Getting a feel for the data
 str(Data)
@@ -44,7 +59,7 @@ g_expo <- ggplot(Data, aes(expo))+
   labs(y = "Relative frequency", x = "expo")
 
 g_ageph <- ggplot(Data, aes(ageph))+
-  geom_histogram(aes(y = (..count..)/sum(..count..)), fill = KUL, col = KUL, binwidth = 2, alpha = 0.7)+
+  geom_bar(aes(y = (..count..)/sum(..count..)), fill = KUL, col = KUL, alpha = 0.7)+
   ggtitle("Relative Frequency - Age policyholder")+
   labs(y = "Relative frequency", x = "ageph")
 
@@ -115,23 +130,24 @@ freq_emp_mean <- sum(Data$freq) / sum(Data$expo)
 freq_emp_var <- sum((Data$freq - freq_emp_mean*Data$expo)^2)/sum(Data$expo)
 
 
-# Representing spatial data
-shape_Belgium <-st_read(file.choose(), quiet = TRUE)
-shape_Belgium<-st_transform(shape_Belgium, "+proj=longlat +datum=WGS84")
+## Representing spatial data
 
-post_expo <- Data %>% group_by(postal) %>% summarize(num = n(), total_expo = sum(expo))
-shape_Belgium <- left_join(shape_Belgium, post_expo, by = c("POSTCODE" = "postal"))
-shape_Belgium$freq_area <- shape_Belgium$total_expo/shape_Belgium$Shape_Area
-shape_Belgium$freq_class <- cut(shape_Belgium$freq_area,
-                          breaks = quantile(shape_Belgium$freq_area, c(0,0.2,0.8,1), na.rm = TRUE),
-                          right = FALSE, include.lowest = TRUE,
-                          labels = c("low", "average", "high"))
-
-g_shapefile <- ggplot(shape_Belgium) + 
-  geom_sf(aes(fill = freq_class), colour = KUL, size = 0.1) +
-  ggtitle("Claim frequency data") +
-  labs(fill = "Relative\nexposure") +
-  scale_fill_brewer(palette = "Reds", na.value = "white")
+# shape_Belgium <-st_read(file.choose(), quiet = TRUE)
+# shape_Belgium<-st_transform(shape_Belgium, "+proj=longlat +datum=WGS84")
+# 
+# post_expo <- Data %>% group_by(postal) %>% summarize(num = n(), total_expo = sum(expo))
+# shape_Belgium <- left_join(shape_Belgium, post_expo, by = c("POSTCODE" = "postal"))
+# shape_Belgium$freq_area <- shape_Belgium$total_expo/shape_Belgium$Shape_Area
+# shape_Belgium$freq_class <- cut(shape_Belgium$freq_area,
+#                           breaks = quantile(shape_Belgium$freq_area, c(0,0.2,0.8,1), na.rm = TRUE),
+#                           right = FALSE, include.lowest = TRUE,
+#                           labels = c("low", "average", "high"))
+# 
+# g_shapefile <- ggplot(shape_Belgium) + 
+#   geom_sf(aes(fill = freq_class), colour = KUL, size = 0.1) +
+#   ggtitle("Claim frequency data") +
+#   labs(fill = "Relative\nexposure") +
+#   scale_fill_brewer(palette = "Reds", na.value = "white")
 
 g_shapefile
 
@@ -149,12 +165,48 @@ lm(freq~split, data = Data)[1]    #
 lm(freq~sportc, data = Data)[1]   # positive (sportscar more)
 lm(freq~use, data = Data)[1]      # positive (professional more)
 
+# Checking relations / dependencies between covariates (TO DO, ERROR)
+library(ClustOfVar)
+library(PCAmixdata)
+
+Data_group <- splitmix(Data)
+Data_quanti <- Data[Data_group$col.quant]
+Data_quali <- Data[Data_group$col.qual]
+
+tree <- hclustvar(X.quanti = Data_quanti, X.quali = Data_quali)
+plot(tree)
 
 
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### Making test set (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+# Split data into train and test subsets 
+
+set.seed(1729)
+trainIndex <- createDataPartition(Data$freq, times = 1, p = 0.8, list = FALSE, group = 10)
+
+data_train <- Data[trainIndex,]
+data_test <- Data[-trainIndex,]
 
 
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### Generalized Linear Models (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
 
+# For claim frequency, suitable distributions are: Poisson and/or Negative Binomial
 
+fam <- poisson
+g1 <- glm(freq~1, family = fam, offset = log(expo), data = Data)
+g2 <- glm(freq~agecar, family = fam, offset = log(expo), data = Data)
+g3 <- glm(freq~ageph, family = fam, offset = log(expo), data = Data)
+g4 <- glm(freq~cover, family = fam, offset = log(expo), data = Data)
+g5 <- glm(freq~fleet, family = fam, offset = log(expo), data = Data)
+g6 <- glm(freq~fuel, family = fam, offset = log(expo), data = Data)
+g7 <- glm(freq~power, family = fam, offset = log(expo), data = Data)
+g8 <- glm(freq~sexph, family = fam, offset = log(expo), data = Data)
+g9 <- glm(freq~split, family = fam, offset = log(expo), data = Data)
+g10 <- glm(freq~sportc, family = fam, offset = log(expo), data = Data)
+g11 <- glm(freq~use, family = fam, offset = log(expo), data = Data)
 
 
 
