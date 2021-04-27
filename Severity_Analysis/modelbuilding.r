@@ -14,6 +14,7 @@ library(data.table)
 library(glmnet)
 library(readxl)
 library(classInt)
+library(evtree)
 hgd()
 hgd_browse()
 KULbg <- "#116e8a"
@@ -61,9 +62,52 @@ test <- Data[-trainIndex,]
 train$logclaimAm <- log(train$claimAm)
 
 #binning age
-bins <- rbin_quantiles(train, claimAm, ageph, 10)$bins
-bins$cut_point
-breaks <- c(0, 25, 29, 33, 37, 42, 46, 50, 56, 65, 100)
+#binning age 
+
+#getting the dataset for age 
+getGAMdata_single = function(model, term, var, varname){
+     pred <- predict(model, type= "terms", terms =term)
+     dt_pred <- tibble("x" = var, pred)
+     dt_pred <- arrange(dt_pred, x)
+     names(dt_pred) <- c("x", "s")
+     dt_unique <- unique(dt_pred)
+     dt_exp <- dt_pred%>% group_by(x) %>% summarize(tot=n())
+     dt_exp <- dt_exp[c("x", "tot")]
+     GAM_data <- left_join(dt_unique, dt_exp)
+     names(GAM_data) <- c(varname, "s", "tot")
+     GAM_data <- GAM_data[which(GAM_data$tot !=0), ]
+     return(GAM_data)
+}
+
+gam_ageph <- getGAMdata_single(freq_gam_geo, "s(ageph)", train_geo$ageph, "ageph")
+
+ctrl.freq <- evtree.control(alpha = 77, maxdepth = 5 )
+
+evtree_claimAm_ageph <- evtree(s ~ ageph,
+                            data = gam_ageph, 
+                            weights = tot, 
+                            control = ctrl.freq )
+
+plot(evtree_claimAm_ageph)
+
+
+#extract the points from the tree model 
+splits_evtree = function(evtreemodel, GAMvar, DTvar){
+     preds <- predict(evtreemodel, type= "node")
+     nodes <- data.frame("x"= GAMvar, "nodes" = preds)
+     nodes$change <- c(0, pmin(1,diff(nodes$nodes)))
+     splits_evtree<- unique(c(min(DTvar), 
+     nodes$x[which(nodes$change == 1)], 
+     max(DTvar)))
+     return(splits_evtree)
+}
+
+claimAm_splits_ageph <- splits_evtree(evtree_claimAm_ageph, 
+                                      gam_ageph$ageph, 
+                                      train_nozero$ageph)
+claimAm_splits_ageph
+
+breaks <- claimAm_splits_ageph
 group_ageph <- cut(train$ageph,
                     breaks = breaks, include.lowest = T,
                     right = FALSE)
@@ -105,7 +149,7 @@ geom_line(aes(x = a, y = b_glm_age)) +
 geom_line(aes(x = a, y = l_glm_age), linetype = 3) +
 geom_line(aes(x = a, y = u_glm_age), linetype = 3)
 
-#glm age binned 
+#glm age binned
 # note the cut is done on A  as it needs the same factorization as age 
 glm_grouped_age <- glm(claimAm ~ group_ageph,
                        data = train_nozero, family = Gamma(link = "log"))
@@ -139,14 +183,20 @@ plot(gam_spatial, scheme = 2)
 post_dt <- st_centroid(belgium_shape_sf)
 post_dt$LONG<- do.call(rbind, post_dt$geometry)[,1]
 post_dt$LAT <- do.call(rbind, post_dt$geometry)[,2]
-pred  <- predict(gam_spatial, newdata = post_dt, type= "terms", terms = 's(LONG,LAT)')
+
+pred  <- predict(gam_spatial, newdata = post_dt, type= "terms", 
+                 terms = 's(LONG,LAT)')
+
+
+
 pred_dt <- data.frame(pc = post_dt$POSTCODE, 
-                      long = post_dt$LONG, 
-                      lat = post_dt$LAT, pred)
+                      LONG= post_dt$LONG, 
+                      LAT = post_dt$LAT, pred)
 names(pred_dt)[4] <- "fit_spatial"
 
 
-belgium_shape_sf <- left_join(belgium_shape_sf, pred_dt, by = c("POSTCODE" = "pc"))
+belgium_shape_sf <- left_join(belgium_shape_sf, 
+                              pred_dt, by = c("POSTCODE" = "pc"))
 
 tm_shape(belgium_shape_sf) + 
   tm_borders(col = 'white', lwd = .1 )+
@@ -157,24 +207,82 @@ tm_shape(belgium_shape_sf) +
             legend.text.size = 1.0 )
 
 #binning spatial effect 
+
+
 classint_fisher <- classIntervals(
-                    pred_dt$fit_spatial, num_bins, 
+                    pred_dt$fit_spatial,5, 
                    style= "fisher")
 
 classint_fisher$brks
+crp <- colorRampPalette(c("#99CCFF", "#003366"))
+plot(classint_fisher, crp(5),
+     xlab = expression(hat(f)(long,lat)), 
+     main = "fisher")
+belgium_shape_sf$classint_fisher <- cut(belgium_shape_sf$fit_spatial, 
+     breaks = classint_fisher$brks, right= FALSE, 
+     include.lowest = TRUE, dig.lab = 2)
 
 
+ggplot(belgium_shape_sf)+ theme_bw()+
+labs(fill = "Fisher") + geom_sf(aes(fill = classint_fisher), colour = NA) + 
+ggtitle("MTPL claim amount") + 
+scale_fill_brewer(palette = "Blues", na.value = "white") + 
+theme_bw()
 
-#setting op the dataframe to predict it with spatial effects 
-inspost$fuel <- train$fuel[1]
-inspost$use <- train$use[1]
-inspost$cover <- train$cover[1]
-inspost$sportc <- train$sportc[1]
-inspost$agecar <- train$agecar[1]
-inspost$sexph <- train$sexph[1]
-inspost$split <- train$split[1]
-inspost$power <- train$power[1]
-inspost$group_ageph <- train$group_ageph [1]
 
+# creating dataframe with binned spatial effect 
+names(pred_dt)[4] <- "fit_spatial"
+train_geo <- train_nozero
+train_geo <- left_join(train_geo, pred_dt, by = c("postal" = "pc"))
+train_geo$geo <- as.factor(cut(train_geo$fit_spatial, 
+     breaks = classint_fisher$brks, right=FALSE, 
+     include.lowest=TRUE, dig.lab=2))
+
+freq_gam_geo <- gam(claimAm ~ cover + fuel + s(ageph) + geo, data = train_geo, family = Gamma(link = "log") )
+
+#binning age 
+
+#getting the dataset for age 
+getGAMdata_single = function(model, term, var, varname){
+     pred <- predict(model, type= "terms", terms =term)
+     dt_pred <- tibble("x" = var, pred)
+     dt_pred <- arrange(dt_pred, x)
+     names(dt_pred) <- c("x", "s")
+     dt_unique <- unique(dt_pred)
+     dt_exp <- dt_pred%>% group_by(x) %>% summarize(tot=n())
+     dt_exp <- dt_exp[c("x", "tot")]
+     GAM_data <- left_join(dt_unique, dt_exp)
+     names(GAM_data) <- c(varname, "s", "tot")
+     GAM_data <- GAM_data[which(GAM_data$tot !=0), ]
+     return(GAM_data)
+}
+
+gam_ageph <- getGAMdata_single(freq_gam_geo, "s(ageph)", train_geo$ageph, "ageph")
+
+ctrl.freq <- evtree.control(alpha = 77, maxdepth = 5 )
+
+evtree_claimAm_ageph <- evtree(s ~ ageph,
+                            data = gam_ageph, 
+                            weights = tot, 
+                            control = ctrl.freq )
+
+plot(evtree_claimAm_ageph)
+
+
+#extract the points from the tree model 
+splits_evtree = function(evtreemodel, GAMvar, DTvar){
+     preds <- predict(evtreemodel, type= "node")
+     nodes <- data.frame("x"= GAMvar, "nodes" = preds)
+     nodes$change <- c(0, pmin(1,diff(nodes$nodes)))
+     splits_evtree<- unique(c(min(DTvar), 
+     nodes$x[which(nodes$change == 1)], 
+     max(DTvar)))
+     return(splits_evtree)
+}
+
+claimAm_splits_ageph <- splits_evtree(evtree_claimAm_ageph, 
+                                      gam_ageph$ageph, 
+                                      train_nozero$ageph)
+claimAm_splits_ageph
 
 ### using lasso and ridge regresion with carret 
