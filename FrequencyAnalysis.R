@@ -27,18 +27,34 @@ KUL <- "#116E8A"
 # colnames(Data) <- c("ageph","postal","expo","lnexpo","freq","freq_ann","agecar","sexph","fuel",
 #                     "split","use","fleet","sportc","cover","power")
 
-# Making ageph into a factor variable 
-breaks <- rbin_quantiles(data = Data, response = freq, predictor = ageph, bins = 10)$bins$cut_point
-break_p <- c(0,28,33,37,41,46,50,55,61,68,96)
-binned_age <- cut(Data$ageph, breaks = break_p, labels = breaks, 
-                  include.lowest = T, right = F)
 
-Data$ageph <- binned_age
-Data$ageph <- ordered(Data$ageph, levels = breaks)
+
+# Making ageph into a factor variable with evtree (slide 85)
+# breaks <- rbin_quantiles(data = Data, response = freq, predictor = ageph, bins = 10)$bins$cut_point
+# break_p <- c(0,28,33,37,41,46,50,55,61,68,96)
+# binned_age <- cut(Data$ageph, breaks = break_p, labels = breaks, 
+#                   include.lowest = T, right = F)
+# 
+# Data$ageph <- binned_age
+# Data$ageph <- ordered(Data$ageph, levels = breaks)
+
+age_range <- min(Data$ageph):max(Data$ageph)  # 17-95
+
+
+
+
+
+
+
+
+
+
 
 # Removing unnecessary variables 
 Data$lnexpo <- NULL
 Data$freq_ann <- NULL
+
+Data$postal <- as.factor(Data$postal)
 
 # Getting a feel for the data
 str(Data)
@@ -46,64 +62,69 @@ names(Data)
 head(Data)
 summary(Data)
 
+str(data_train)
+names(data_train)
+head(data_train)
+summary(data_train)
+
 
 # Plot relative frequency of variates
-g_freq <- ggplot(Data, aes(freq))+
+g_freq <- ggplot(data_train, aes(freq))+
   geom_bar(aes(y = (..count..)/sum(..count..)), fill = KUL, col = KUL, alpha = 0.7)+
   ggtitle("Relative Frequency - Number of claims")+
   labs(y = "Relative frequency", x = "freq")
 
-g_expo <- ggplot(Data, aes(expo))+
+g_expo <- ggplot(data_train, aes(expo))+
   geom_histogram(aes(y = (..count..)/sum(..count..)), fill = KUL, col = KUL, alpha = 0.7, bins = 20)+
   ggtitle("Relative Frequency - Exposure")+
   labs(y = "Relative frequency", x = "expo")
 
-g_ageph <- ggplot(Data, aes(ageph))+
+g_ageph <- ggplot(data_train, aes(ageph))+
   geom_bar(aes(y = (..count..)/sum(..count..)), fill = KUL, col = KUL, alpha = 0.7)+
   ggtitle("Relative Frequency - Age policyholder")+
   labs(y = "Relative frequency", x = "ageph")
 
-g_agecar <- ggplot(Data, aes(agecar))+
+g_agecar <- ggplot(data_train, aes(agecar))+
   geom_bar(aes(y = (..count..)/sum(..count..)), fill = KUL, col = KUL, alpha = 0.7)+
   ggtitle("Relative Frequency - Age vehicle")+
   labs(y = "Relative frequency", x = "agecar")
 
-g_sexph <- ggplot(Data, aes(sexph))+
+g_sexph <- ggplot(data_train, aes(sexph))+
   geom_bar(aes(y = (..count..)/sum(..count..)), fill = KUL, col = KUL, alpha = 0.7)+
   ggtitle("Relative Frequency - Sex policyholder")+
   labs(y = "Relative frequency", x = "sexpg")
 
-g_fuel <- ggplot(Data, aes(fuel))+
+g_fuel <- ggplot(data_train, aes(fuel))+
   geom_bar(aes(y = (..count..)/sum(..count..)), fill = KUL, col = KUL, alpha = 0.7)+
   ggtitle("Relative Frequency - Fueltype")+
   labs(y = "Relative frequency", x = "fuel")
 
-g_split <- ggplot(Data, aes(split))+
+g_split <- ggplot(data_train, aes(split))+
   geom_bar(aes(y = (..count..)/sum(..count..)), fill = KUL, col = KUL, alpha = 0.7)+
   ggtitle("Relative Frequency - Payment split")+
   labs(y = "Relative frequency", x = "split")
 
-g_use <- ggplot(Data, aes(use))+
+g_use <- ggplot(data_train, aes(use))+
   geom_bar(aes(y = (..count..)/sum(..count..)), fill = KUL, col = KUL, alpha = 0.7)+
   ggtitle("Relative Frequency - Utilization of the vehicle")+
   labs(y = "Relative frequency", x = "use")
 
-g_fleet <- ggplot(Data, aes(fleet))+
+g_fleet <- ggplot(data_train, aes(fleet))+
   geom_bar(aes(y = (..count..)/sum(..count..)), fill = KUL, col = KUL, alpha = 0.7)+
   ggtitle("Relative Frequency - Part of fleet or not")+
   labs(y = "Relative frequency", x = "fleet")
 
-g_sportc <- ggplot(Data, aes(sportc))+
+g_sportc <- ggplot(data_train, aes(sportc))+
   geom_bar(aes(y = (..count..)/sum(..count..)), fill = KUL, col = KUL, alpha = 0.7)+
   ggtitle("Relative Frequency - Sportscar or not")+
   labs(y = "Relative frequency", x = "sportc")
 
-g_cover <- ggplot(Data, aes(cover))+
+g_cover <- ggplot(data_train, aes(cover))+
   geom_bar(aes(y = (..count..)/sum(..count..)), fill = KUL, col = KUL, alpha = 0.7)+
   ggtitle("Relative Frequency - Type of cover")+
   labs(y = "Relative frequency", x = "cover")
 
-g_power <- ggplot(Data, aes(power))+
+g_power <- ggplot(data_train, aes(power))+
   geom_bar(aes(y = (..count..)/sum(..count..)), fill = KUL, col = KUL, alpha = 0.7)+
   ggtitle("Relative Frequency - Power of car")+
   labs(y = "Relative frequency", x = "power")
@@ -112,6 +133,7 @@ grid.arrange(g_freq,g_expo,g_agecar,g_ageph,g_cover,g_fleet,g_fuel,g_power,g_sex
 
 # Empirical frequency 
 Data %>% summarize(emp_freq = sum(freq) / sum(expo))   # 0.1393355
+data_train %>% summarize(emp_freq = sum(freq) / sum(expo))   # 0.1397242
 
 Data %>% group_by(ageph) %>% summarize(tot_freq = sum(freq), tot_expo = sum(expo), emp_freq = sum(freq) / sum(expo))
 Data %>% group_by(agecar) %>% summarize(tot_freq = sum(freq), tot_expo = sum(expo), emp_freq = sum(freq) / sum(expo))
@@ -124,10 +146,33 @@ Data %>% group_by(sportc) %>% summarize(tot_freq = sum(freq), tot_expo = sum(exp
 Data %>% group_by(cover) %>% summarize(tot_freq = sum(freq), tot_expo = sum(expo), emp_freq = sum(freq) / sum(expo))
 Data %>% group_by(power) %>% summarize(tot_freq = sum(freq), tot_expo = sum(expo), emp_freq = sum(freq) / sum(expo))
 
+data_train %>% group_by(ageph) %>% summarize(tot_freq = sum(freq), tot_expo = sum(expo), emp_freq = sum(freq) / sum(expo))
+data_train %>% group_by(agecar) %>% summarize(tot_freq = sum(freq), tot_expo = sum(expo), emp_freq = sum(freq) / sum(expo))
+data_train %>% group_by(sexph) %>% summarize(tot_freq = sum(freq), tot_expo = sum(expo), emp_freq = sum(freq) / sum(expo))
+data_train %>% group_by(fuel) %>% summarize(tot_freq = sum(freq), tot_expo = sum(expo), emp_freq = sum(freq) / sum(expo))
+data_train %>% group_by(split) %>% summarize(tot_freq = sum(freq), tot_expo = sum(expo), emp_freq = sum(freq) / sum(expo))
+data_train %>% group_by(use) %>% summarize(tot_freq = sum(freq), tot_expo = sum(expo), emp_freq = sum(freq) / sum(expo))
+data_train %>% group_by(fleet) %>% summarize(tot_freq = sum(freq), tot_expo = sum(expo), emp_freq = sum(freq) / sum(expo))
+data_train %>% group_by(sportc) %>% summarize(tot_freq = sum(freq), tot_expo = sum(expo), emp_freq = sum(freq) / sum(expo))
+data_train %>% group_by(cover) %>% summarize(tot_freq = sum(freq), tot_expo = sum(expo), emp_freq = sum(freq) / sum(expo))
+data_train %>% group_by(power) %>% summarize(tot_freq = sum(freq), tot_expo = sum(expo), emp_freq = sum(freq) / sum(expo))
+# By comparing Data and data_train, we can see whether the training data is a good sample for the full dataset
+
+
 
 # Frequency variable - descriptives 
 freq_emp_mean <- sum(Data$freq) / sum(Data$expo)
 freq_emp_var <- sum((Data$freq - freq_emp_mean*Data$expo)^2)/sum(Data$expo)
+
+freq_emp_mean_train <- sum(data_train$freq) / sum(data_train$expo)
+freq_emp_var_train <- sum((data_train$freq - freq_emp_mean_train*data_train$expo)^2)/sum(data_train$expo)
+
+freq_emp_mean          # 0.1393355
+freq_emp_mean_train    # 0.1397242
+
+freq_emp_var           # 0.1516978
+freq_emp_var_train     # 0.1520487
+  # GOOD SAMPLE, first two moments are comparable 
 
 
 ## Representing spatial data
@@ -152,6 +197,30 @@ freq_emp_var <- sum((Data$freq - freq_emp_mean*Data$expo)^2)/sum(Data$expo)
 g_shapefile
 
 
+## Binning spatial data 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Checking the individual impact of each covariate on dependent variable 
 # NOTE: when independent variable is a factor with >2 levels, R makes k-1 dummies for linear model 
 lm(freq~agecar, data = Data)[1] 
@@ -169,12 +238,12 @@ lm(freq~use, data = Data)[1]      # positive (professional more)
 library(ClustOfVar)
 library(PCAmixdata)
 
-Data_group <- splitmix(Data)
+Data_group <- splitmix(Q)   # Q = Data, but without ordered factors, splitmix() does not work with ordered factors  
 Data_quanti <- Data[Data_group$col.quant]
 Data_quali <- Data[Data_group$col.qual]
 
 tree <- hclustvar(X.quanti = Data_quanti, X.quali = Data_quali)
-plot(tree)
+g_dendogram <- plot(tree)
 
 
 ### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
@@ -193,7 +262,8 @@ data_test <- Data[-trainIndex,]
 ### Generalized Linear Models (Frequency)
 ### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
 
-# For claim frequency, suitable distributions are: Poisson and/or Negative Binomial
+# For claim frequency, suitable distributions are: Poisson and/or Negative Binomial.
+# In this study, there will be opted to use the Poisson distribution.
 
 fam <- poisson
 g1 <- glm(freq~1, family = fam, offset = log(expo), data = Data)
@@ -225,83 +295,218 @@ g11 <- glm(freq~use, family = fam, offset = log(expo), data = Data)
 
 
 
-# Plotting histograms or density plots for all variates 
-ggplot(Data, aes(x=freq))+
-  geom_bar(fill = KUL)+
-  ggtitle("Claim Frequency")+
-  labs(y = "Count", x = "Claim frequency during period of exposure")
-
-ggplot(Data, aes(x=ageph))+
-  geom_density(color = KUL)+
-  ggtitle("")+
-  labs(y = "Count", x = "Claim frequency during period of exposure")
-
-
-
-
-
-
-
-
-
-
-# Quick linear model to see the sign of influence between variables on frequency
-lm(freq~., data = Data)[1]
-  # Obviously very small values, because a lot of 0-values in frequency
-
-
-ggplot(Data, aes(x=freq),
-       xlab = "Claim frequency in exposure",
-       ylab = "Count")+
-  geom_bar()+
-  ggtitle("Histogram Claim Frequency")
-ggplot(Data, aes(x=sexph))+
-  geom_bar()
-
-hist(Data$sexph)
-hist(Data$ageph)
-hist(Data$agecar)
-
-
+# # Plotting histograms or density plots for all variates 
+# ggplot(Data, aes(x=freq))+
+#   geom_bar(fill = KUL)+
+#   ggtitle("Claim Frequency")+
+#   labs(y = "Count", x = "Claim frequency during period of exposure")
+# 
+# ggplot(Data, aes(x=ageph))+
+#   geom_density(color = KUL)+
+#   ggtitle("")+
+#   labs(y = "Count", x = "Claim frequency during period of exposure")
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# # Quick linear model to see the sign of influence between variables on frequency
+# lm(freq~., data = Data)[1]
+#   # Obviously very small values, because a lot of 0-values in frequency
+# 
+# 
+# ggplot(Data, aes(x=freq),
+#        xlab = "Claim frequency in exposure",
+#        ylab = "Count")+
+#   geom_bar()+
+#   ggtitle("Histogram Claim Frequency")
+# ggplot(Data, aes(x=sexph))+
+#   geom_bar()
+# 
+# hist(Data$sexph)
+# hist(Data$ageph)
+# hist(Data$agecar)
 
 
 
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### Binning spatial data (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+
+##### PART 1: adjusting data for use coordinates 
+post_dt <- st_centroid(shape_Belgium)
+post_dt$long <- do.call(rbind, post_dt$geometry)[,1]
+post_dt$lat <- do.call(rbind, post_dt$geometry)[,2]
+
+for(i in 1:length(Data$postal)){
+  Data$long[i] <- post_dt$long[Data$postal[i]==post_dt$POSTCODELA]
+  Data$lat[i] <- post_dt$lat[Data$postal[i]==post_dt$POSTCODELA]
+}   # this adds long-and-lat-coordinates to the Dataset 
+
+gam_spatial <- gam(freq ~ s(long, lat, bs = "tp"), offset = log(expo), 
+                        family = poisson(link = "log"), data = Data)
+
+##### PART 2: finding the optimal GAM
+# NOTE: use the training set !! 
+
+gam1 <- gam(freq ~ s(ageph) + s(long,lat) + power + cover + sportc + fleet + use + split 
+            + fuel + sexph + agecar, offset = log(expo), data = data_train,
+            family = poisson(link = "log"))
+
+gam2 <- gam(freq ~ s(ageph) + s(long,lat) + power + cover + sportc + fleet + use + split 
+            + fuel + sexph + agecar, offset = log(expo), method = "REML", data = data_train,
+            family = poisson(link = "log"))
+
+gam3 <- gam(freq ~ s(ageph, by = power) + s(long,lat) + power + cover + sportc + fleet + use + split 
+            + fuel + sexph + agecar, offset = log(expo), method = "REML", data = data_train,
+            family = poisson(link = "log"))
+
+summary(gam1)
+summary(gam2)
+summary(gam3)
+# From gam1-3 we note that 'sportc' and 'use' are rather insignificant in explaining frequency 
+# AND note that gam2 is best in explaining based on R2 and deviance explained 
+
+gam4 <- gam(freq ~ s(ageph) + s(long,lat) + power + cover + fleet + split 
+            + fuel + sexph + agecar, offset = log(expo), method = "REML", data = data_train,
+            family = poisson(link = "log"))
+
+summary(gam4) # Gives a better R2-adj and a better deviance explained 
+# But, still note that 'sexph' is only significant at 1% level, so try and dropping it 
+
+gam5 <- gam(freq ~ s(ageph) + s(long,lat) + power + cover + fleet + split 
+            + fuel + agecar, offset = log(expo), method = "REML", data = data_train,
+            family = poisson(link = "log"))
+
+summary(gam5) # until now, best fit based upon R2 and deviance explained 
+
+gam6 <- gam(freq ~ s(ageph, by = power) + s(long,lat) + power + cover + fleet + split 
+            + fuel + agecar, offset = log(expo), method = "REML", data = data_train,
+            family = poisson(link = "log"))
+
+summary(gam6) # GAM with insignificant variables removed, but factor-smooth interaction
+
+gam7 <- gam(freq ~ s(ageph, by = power) + s(long,lat) + cover + fleet + split 
+            + fuel + agecar, offset = log(expo), method = "REML", data = data_train,
+            family = poisson(link = "log"))
+
+summary(gam7) 
+
+# Comparing models 
+logLik(gam1) # -50251.48 (!)
+logLik(gam2) # -50252.16 (!)
+logLik(gam3) # -50514.78
+logLik(gam4) # -50254.22 (!)
+logLik(gam5) # -50256.22
+logLik(gam6) # -50528.10
+logLik(gam7) # -50535.65
 
 
+AIC(gam1) # 100595.9 (!)
+AIC(gam2) # 100597.7 (!)
+AIC(gam3) # 101124.2
+AIC(gam4) # 100597.9 (!)
+AIC(gam5) # 100599.9
+AIC(gam6) # 101145.0
+AIC(gam7) # 101159.8
+# CONCLUSION: choose model with lowest AIC and minimal log-Likelihood -> gam 1-2-4
+
+# SO, we take gam4, because it has the best characteristics on different measurements
+gam_opt <- gam4
+
+post_dt$cover <- Data$cover[1]
+post_dt$ageph <- Data$ageph[1]
+post_dt$power <- Data$power[1]
+post_dt$fleet <- Data$fleet[1]     # Add variables to post_dt to run GAM_opt
+post_dt$split <- Data$split[1]
+post_dt$fuel <- Data$fuel[1]
+post_dt$sexph <- Data$sexph[1]
+post_dt$agecar <- Data$agecar[1]
+
+pred_gam_spatial <- predict(gam_opt, newdata = post_dt, type = "terms", terms = "s(long,lat)")
+# gives predicted frequency, based on gam_opt per city, based on its coordinates 
+
+dt_pred <- data.frame(pc = post_dt$POSTCODE, long = post_dt$long,
+                      lat = post_dt$lat, pred = pred_gam_spatial)
+names(dt_pred)[4] <- "spatial_pred_freq"
+shape_Belgium <- left_join(shape_Belgium, dt_pred, by = c("POSTCODE" = "pc"))
+# adds long and lat coordinates per postal code to shape file 
+
+ggplot(shape_Belgium) +
+  geom_sf(aes(fill = spatial_pred_freq), colour = NA) +
+  ggtitle("Claim frequency data - spatial - UNbinned") +
+  scale_fill_gradient(low="#99CCFF", high="#003366") +
+  theme_bw()
+
+dt_pred <- dplyr::arrange(dt_pred, pc) # order based on numerical value of postal code
+
+# PART 2: actually binning spatial factor in 'geo' in for-loop
+AIC_comp <- c()
+BIC_comp <- c()
+breaks <- list()
+crp <- colorRampPalette(c("#99CCFF", "#003366"))  
+
+for(j in 2:15){
+  num_bins <- j
+  classint_fisher <- classIntervals(dt_pred$spatial_pred_freq, num_bins, style = "fisher")
+  breaks[[j]] <- classint_fisher$brks
+  shape_Belgium$class_fisher <- cut(shape_Belgium$spatial_pred_freq, 
+                                    breaks = classint_fisher$brks, 
+                                    right = FALSE, include.lowest = TRUE, 
+                                    dig.lab = 2) 
+  
+  df_geo$geo <- as.factor(cut(df_geo$spatial_pred_freq, 
+                              breaks = classint_fisher$brks, right = FALSE, 
+                              include.lowest = TRUE, dig.lab = 2))
+  
+  AIC_comp[j] <- gam(freq ~ s(ageph) + geo + power + cover + fleet + split 
+                + fuel + sexph + agecar, offset = log(expo), method = "REML", data = df_geo,
+                family = poisson(link = "log"))$aic
+  
+  BIC_comp[j] <- BIC(gam(freq ~ s(ageph) + geo + power + cover + fleet + split 
+                         + fuel + sexph + agecar, offset = log(expo), method = "REML", data = df_geo,
+                         family = poisson(link = "log")))
+}
 
 
+num_bins <- 5 # Fixed for now, make tuning parameter later
+classint_fisher <- classIntervals(dt_pred$spatial_pred_freq, num_bins, style = "fisher")
+
+classint_fisher$brks            # -0.55779965 -0.32657131 -0.13823580 -0.01043908  0.14957887  0.39081850
+min(dt_pred$spatial_pred_freq)  # -0.5577996
+max(dt_pred$spatial_pred_freq)  # 0.3908185
+
+crp <- colorRampPalette(c("#99CCFF", "#003366"))  
+plot(classint_fisher, crp(num_bins), xlab = expression(hat(f)(long,lat)), main = "Fisher binning for spatial effect on GAM prediction")
+
+shape_Belgium$class_fisher <- cut(shape_Belgium$spatial_pred_freq, 
+                                    breaks = classint_fisher$brks, 
+                                    right = FALSE, include.lowest = TRUE, 
+                                    dig.lab = 2) 
+
+ggplot(shape_Belgium) + theme_bw() + labs(fill = "Fisher") +
+  geom_sf(aes(fill = class_fisher), colour = NA) +
+  ggtitle("MTPL claim frequency data") +
+  scale_fill_brewer(palette = "Blues", na.value = "white") +
+  theme_bw()
+
+df_geo$postal <- as.numeric(df_geo$postal)
+
+df_geo <- Data %>% dplyr::select(freq,ageph,expo,power, cover, fleet, split, fuel, sexph, agecar,postal)
+df_geo <- left_join(df_geo,dt_pred, by = c("postal" = "pc"))
+df_geo$geo <- as.factor(cut(df_geo$spatial_pred_freq, 
+                              breaks = classint_fisher$brks, right = FALSE, 
+                              include.lowest = TRUE, dig.lab = 2))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+gam(freq ~ s(ageph) + geo + power + cover + fleet + split 
+            + fuel + sexph + agecar, offset = log(expo), method = "REML", data = df_geo,
+            family = poisson(link = "log"))$aic
 
 
 
