@@ -8,32 +8,42 @@ library(visdat)
 library(httpgd)
 library(skimr)
 library(DataExplorer)
+library(sf)
 hgd()
 hgd_browse()
 
 data <- read.csv2(file = "Severity_Analysis/train.csv", sep = ",")
+belgium_shape_sf <- st_read('Severity_Analysis//shape file Belgie postcodes//npc96_region_Project1.shp', quiet = TRUE)
+belgium_shape_sf <- st_transform(belgium_shape_sf, "+proj=longlat +datum=WGS84")
+class(belgium_shape_sf)
 
 # factorize 
 Data <- as.data.frame(data)
 train <- Data %>% select(-X) %>%
- mutate(across(c(claimAm, lat, long, logclaimAm), as.numeric)) %>%
+ mutate(across(c(claimAm, LAT, LONG), as.numeric)) %>%
  mutate(across(c(agecar, sexph, power, split, fuel, use, fleet, sportc, cover, ageph, group_ageph), as.factor))
 
-str(train)
-dim(train)
+#take elements with claimam and create logclaimam variable 
+train_nozero <- subset(train, Data$claimAm != 0)
+train_nozero$logclaimAm <- log(train_nozero$claimAm)
+
+
+
+str(train_nozero)
+dim(train_nozero)
 
 ######### exploratory data analysis ##############
 #plot density claimAm 
-ggplot(train, aes(x = claimAm)) +
+ggplot(train_nozero, aes(x = claimAm)) +
 geom_density() +
 scale_x_continuous(trans = 'log2') +
-geom_histogram(aes(y = ..density..), fill = "#116e8a", color = "white", alpha = 0.7) +
+geom_histogram(aes(y = ..density..), bins = 20,fill = "#116e8a", color = "white", alpha = 0.7) +
 geom_rug()
 
 plot <- list()
 
-for (i in colnames(train)) {
-  plot[[i]] <- ggplot(data = train, mapping = aes_string(x = i, y = "logclaimAm")) +
+for (i in colnames(train_nozero)) {
+  plot[[i]] <- ggplot(data = train_nozero, mapping = aes_string(x = i, y = "logclaimAm")) +
   geom_jitter(aes(color = 'red'), alpha = 0.2) +
   geom_boxplot(, fill = "#116e8a", color = "black", alpha = 0.3) +
     labs(x = i) +
@@ -47,18 +57,18 @@ grid.arrange(plot[[17]], plot[[9]], plot[[4]],
 
 
 #map of balgium 
-post_expo <- train %>% group_by(postal) %>% summarize(tot_freq = sum(claimAm))
+post_expo <- train_nozero %>% group_by(postal) %>% summarize(tot_claimAm = sum(claimAm))
 post_expo %>% slice(1:5)
 
 belgium_shape_sf <- left_join(belgium_shape_sf, post_expo, by = c("POSTCODE" = "postal"))
 
-belgium_shape_sf$claimAm <- belgium_shape_sf$tot_freq / belgium_shape_sf$Shape_Area
+belgium_shape_sf$claimAm <- belgium_shape_sf$tot_claimAm/belgium_shape_sf$Shape_Area
 
 belgium_shape_sf$claimAm_class <- cut(belgium_shape_sf$claimAm,
                                    breaks = quantile(belgium_shape_sf$claimAm,
-                                   c(0, 0.2, 0.8, 1), na.rm = TRUE),
+                                   c(0, 0.2, 0.8,0.9,0.95,0.99, 1), na.rm = TRUE),
                                    right = FALSE, include.lowest = TRUE,
-                                   labels = c("low", "average", "high"))
+                                   labels = c("low", "0.2","0.8", "0.9", "0.95", "0.99"))
 
 ggplot(belgium_shape_sf) +
 geom_sf(aes(fill = claimAm_class), colour = "black", size = 0.1) +
@@ -69,13 +79,13 @@ theme_bw()
 
 #basic plots for variables
 
-train %>% plot_bar()
-train %>% plot_histogram()
+train_nozero %>% plot_bar()
+train_nozero %>% plot_histogram()
 
 
-Data_group <- splitmix(train)
-Data_quanti <- train[Data_group$col.quant]
-Data_quali <- train[Data_group$col.qual]
+Data_group <- splitmix(train_nozero)
+Data_quanti <- train_nozero[Data_group$col.quant]
+Data_quali <- train_nozero[Data_group$col.qual]
 
 tree <- hclustvar(X.quanti = Data_quanti, X.quali = Data_quali)
 plot(tree)

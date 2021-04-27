@@ -13,6 +13,7 @@ library(rbin)
 library(data.table)
 library(glmnet)
 library(readxl)
+library(classInt)
 hgd()
 hgd_browse()
 KULbg <- "#116e8a"
@@ -25,6 +26,7 @@ Mdata <- read.csv("data.csv", ",", header = T)
 belgium_shape_sf <- st_read('Severity_Analysis//shape file Belgie postcodes//npc96_region_Project1.shp', quiet = TRUE)
 belgium_shape_sf <- st_transform(belgium_shape_sf, "+proj=longlat +datum=WGS84")
 class(belgium_shape_sf)
+inspost <- read_excel("toledo files//inspost.xls")
 #name change
 Mdata$claimAm <- toledo$chargtot
 #ann freq delete
@@ -35,61 +37,62 @@ data <- Mdata %>% select(-freq_ann)
 
 
 for( i in 1:length(data$postal)){
-  data$long[i] <- post_dt$long[data$postal[i] == post_dt$POSTCODELA]
-  data$lat[i] <- post_dt$lat[data$postal[i] == post_dt$POSTCODELA]
+  data$LONG[i] <- inspost$LONG[data$postal[i] == inspost$CODPOSS]
+  data$LAT[i] <- inspost$LAT[data$postal[i] == inspost$CODPOSS]
 }
 
 # factor as rdataset
 data <- as.data.frame(data)
 Data <- data %>%
  mutate(across(c(X, ageph, expo, lnexpo, postal), as.numeric)) %>%
- mutate(across(c(agecar, sexph, power, split, fuel, use, fleet, sportc, cover), as.factor))
-Data_nozero <- Data %>% select(-X, - expo, - lnexpo)
+ mutate(across(c(agecar, sexph, power, split, fuel, use, fleet, sportc, cover), as.factor)) %>% 
+ select(-X, - expo, - lnexpo)
 
-Data_nozero <- subset(Data_nozero, Data$claimAm != 0)
-dim(Data_nozero)
 
-# do we need log or not??? 
-Data_nozero$logclaimAm <- log(Data_nozero$claimAm)
+ #split data in test and train data with stratified sampling 
+# the dependend variable is factorized to do the split 
+set.seed(666)
+trainIndex <- createDataPartition(Data$claimAm, p = 0.8, list = FALSE, times = 1, group = 10)
 
-# negative claim amount??? 
-Data_nozero$claimAm[Data_nozero$claimAm < 1]
-Data_nozero$logclaimAm[Data_nozero$claimAm < 1]
+train <- Data[trainIndex,]
+test <- Data[-trainIndex,]
 
-#binning age 
-bins <- rbin_quantiles(Data_nozero, claimAm, ageph, 10)$bins
+#logclaims
+train$logclaimAm <- log(train$claimAm)
+
+#binning age
+bins <- rbin_quantiles(train, claimAm, ageph, 10)$bins
 bins$cut_point
 breaks <- c(0, 25, 29, 33, 37, 42, 46, 50, 56, 65, 100)
-group_ageph <- cut(Data_nozero$ageph,
+group_ageph <- cut(train$ageph,
                     breaks = breaks, include.lowest = T,
                     right = FALSE)
 
-Data_nozero$group_ageph <- group_ageph
+train$group_ageph <- group_ageph
 
-#split data in test and train data with stratified sampling 
-# the dependend variable is factorized to do the split 
-set.seed(666)
-trainIndex <- createDataPartition(Data_nozero$claimAm, p = 0.8, list = FALSE, times = 1, group = 10)
-
-train <- Data_nozero[trainIndex,]
-test <- Data_nozero[-trainIndex,]
-
-class(train)
-
+#save dataset
 write.csv(train, file = "Severity_Analysis/train.csv")
 
+#remove elements with no claimamount
+train_nozero <- subset(train, train$claimAm != 0)
+dim(train_nozero)
+
+
 levels(train$group_ageph)
-levels(Data_nozero$group_ageph)
+levels(train_nozero$group_ageph)
 #####linear model  ####
-lm <- lm(claimAm ~ agecar + sexph + fuel + split + use + fleet + sportc + cover + power, data = train)
+lm <- lm(claimAm ~ agecar + sexph + fuel + split + 
+          use + fleet + sportc + cover + power, data = train)
 summary(lm)
 
 
 ### test glm and gam with Age 
-a <- seq(min(train$ageph), max(train$ageph))
+a <- seq(min(train_nozero$ageph), max(train_nozero$ageph))
 
 #glm age not binned 
-glm_age <- glm(claimAm ~ ageph, data = train, family = Gamma(link = "log"))
+glm_age <- glm(claimAm ~ ageph,
+               data = train_nozero, family = Gamma(link = "log"))
+
 pred_glm_age <- predict(glm_age, newdata = data.frame(ageph = a),
                           type = "terms", se.fit = TRUE)
 b_glm_age <- pred_glm_age$fit
@@ -104,12 +107,14 @@ geom_line(aes(x = a, y = u_glm_age), linetype = 3)
 
 #glm age binned 
 # note the cut is done on A  as it needs the same factorization as age 
-glm_grouped_age <- glm(claimAm ~ group_ageph, data = train, family = Gamma(link = "log"))
+glm_grouped_age <- glm(claimAm ~ group_ageph,
+                       data = train_nozero, family = Gamma(link = "log"))
 
-pred_glm_grouped_age <- predict(glm_grouped_age, newdata = data.frame(group_ageph = cut(a,
-                    breaks = breaks, include.lowest = T,
-                    right = FALSE)),
-                          type = "terms", se.fit = TRUE)
+pred_glm_grouped_age <- predict(glm_grouped_age,
+                    newdata = data.frame(group_ageph = 
+                    cut(a, breaks = breaks, include.lowest = T,
+                    right = FALSE)), type = "terms", se.fit = TRUE)
+
 b_glm_grouped_age <- pred_glm_grouped_age$fit
 l_glm_grouped_age <- pred_glm_grouped_age$fit - qnorm(0.975) * pred_glm_grouped_age$se.fit
 u_glm_grouped_age <- pred_glm_grouped_age$fit + qnorm(0.975) * pred_glm_grouped_age$se.fit
@@ -121,48 +126,55 @@ geom_line(aes(x = a, y = l_glm_grouped_age), linetype = 3) +
 geom_line(aes(x = a, y = u_glm_grouped_age), linetype = 3)
 
 #gam age 
-gam_age <- gam(claimAm ~ s(ageph), data = train, family = Gamma(link = "log"))
+gam_age <- gam(claimAm ~ s(ageph), data = train_nozero, family = Gamma(link = "log"))
 plot(gam_age, scheme = 1)
 
 
 # estimate expected claim amount with spatial effects 
-post_dt <- st_centroid(belgium_shape_sf)
-post_dt$long <- do.call(rbind, post_dt$geometry)[, 1]
-post_dt$lat <- do.call(rbind, post_dt$geometry)[, 2]
-gam_spatial <- gam(claimAm ~s(long, lat, bs = "tp"), family = Gamma(link="log"), data = train)
+gam_spatial <- gam(claimAm ~s(LONG, LAT, bs = "tp"), family = Gamma(link="log"), data = train_nozero)
 plot(gam_spatial, scheme = 2)
 
-pred  <- predict(gam_spatial, newdata = post_dt, type= "terms", terms = 's(long,lat)')
-pred_dt <- data.frame(pc = post_dt$POSTCODELA, 
-                      long = post_dt$long, 
-                      lat = post_dt$lat, pred)
+
+
+post_dt <- st_centroid(belgium_shape_sf)
+post_dt$LONG<- do.call(rbind, post_dt$geometry)[,1]
+post_dt$LAT <- do.call(rbind, post_dt$geometry)[,2]
+pred  <- predict(gam_spatial, newdata = post_dt, type= "terms", terms = 's(LONG,LAT)')
+pred_dt <- data.frame(pc = post_dt$POSTCODE, 
+                      long = post_dt$LONG, 
+                      lat = post_dt$LAT, pred)
 names(pred_dt)[4] <- "fit_spatial"
 
 
-belgium_shape_sf <- left_join(belgium_shape_sf, pred_dt, by = c("POSTCODELA" = "pc"))
+belgium_shape_sf <- left_join(belgium_shape_sf, pred_dt, by = c("POSTCODE" = "pc"))
 
-ggplot(belgium_shape_sf)+ 
-geom_sf(aes(fill = fit_spatial), colour = NA) + 
-ggtitle("claim amount")+
-scale_fill_gradient(low = "#99CCFF", 
-                    high = "#003366")+
-                    theme_bw()
+tm_shape(belgium_shape_sf) + 
+  tm_borders(col = 'white', lwd = .1 )+
+  tm_fill("fit_spatial", style = "cont",
+  palette = "RdBu", legend.reverse = TRUE, 
+  midpoint = TRUE) + 
+  tm_layout(legend.title.size = 1.0 , 
+            legend.text.size = 1.0 )
 
 #binning spatial effect 
+classint_fisher <- classIntervals(
+                    pred_dt$fit_spatial, num_bins, 
+                   style= "fisher")
 
+classint_fisher$brks
 
 
 
 #setting op the dataframe to predict it with spatial effects 
-post_dt$fuel <- train$fuel[1]
-post_dt$use <- train$use[1]
-post_dt$cover <- train$cover[1]
-post_dt$sportc <- train$sportc[1]
-post_dt$agecar <- train$agecar[1]
-post_dt$sexph <- train$sexph[1]
-post_dt$split <- train$split[1]
-post_dt$power <- train$power[1]
-post_dt$group_ageph <- train$group_ageph [1]
+inspost$fuel <- train$fuel[1]
+inspost$use <- train$use[1]
+inspost$cover <- train$cover[1]
+inspost$sportc <- train$sportc[1]
+inspost$agecar <- train$agecar[1]
+inspost$sexph <- train$sexph[1]
+inspost$split <- train$split[1]
+inspost$power <- train$power[1]
+inspost$group_ageph <- train$group_ageph [1]
 
 
 ### using lasso and ridge regresion with carret 
