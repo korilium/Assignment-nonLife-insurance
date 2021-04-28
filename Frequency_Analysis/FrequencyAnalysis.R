@@ -28,34 +28,9 @@ KUL <- "#116E8A"
 # colnames(Data) <- c("ageph","postal","expo","lnexpo","freq","freq_ann","agecar","sexph","fuel",
 #                     "split","use","fleet","sportc","cover","power")
 
-
-
-# Making ageph into a factor variable with evtree (slide 85)
-# breaks <- rbin_quantiles(data = Data, response = freq, predictor = ageph, bins = 10)$bins$cut_point
-# break_p <- c(0,28,33,37,41,46,50,55,61,68,96)
-# binned_age <- cut(Data$ageph, breaks = break_p, labels = breaks, 
-#                   include.lowest = T, right = F)
-# 
-# Data$ageph <- binned_age
-# Data$ageph <- ordered(Data$ageph, levels = breaks)
-
-age_range <- min(Data$ageph):max(Data$ageph)  # 17-95
-
-
-
-
-
-
-
-
-
-
-
 # Removing unnecessary variables 
 Data$lnexpo <- NULL
 Data$freq_ann <- NULL
-
-Data$postal <- as.factor(Data$postal)
 
 # Getting a feel for the data
 str(Data)
@@ -196,21 +171,7 @@ freq_emp_var_train     # 0.1520487
 
 g_shapefile
 
-
-# Checking the individual impact of each covariate on dependent variable 
-# NOTE: when independent variable is a factor with >2 levels, R makes k-1 dummies for linear model 
-lm(freq~agecar, data = Data)[1] 
-lm(freq~ageph, data = Data)[1]    # negative (older less)
-lm(freq~cover, data = Data)[1]    # positive 
-lm(freq~fleet, data = Data)[1]    # negative (fleet less)
-lm(freq~fuel, data = Data)[1]     # negative (petrol less)
-lm(freq~power, data = Data)[1]    # positive (higher more)
-lm(freq~sexph, data = Data)[1]    # negative (male less)
-lm(freq~split, data = Data)[1]    # 
-lm(freq~sportc, data = Data)[1]   # positive (sportscar more)
-lm(freq~use, data = Data)[1]      # positive (professional more)
-
-# Checking relations / dependencies between covariates (TO DO, ERROR)
+# Checking relations / dependencies between covariates
 library(ClustOfVar)
 library(PCAmixdata)
 
@@ -223,7 +184,7 @@ g_dendogram <- plot(tree)
 
 
 ### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
-### Making test set (Frequency)
+### Making train indices for data_train and model_train (Frequency)
 ### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
 # Split data into train and test subsets 
 
@@ -233,72 +194,8 @@ trainIndex <- createDataPartition(Data$freq, times = 1, p = 0.8, list = FALSE, g
 data_train <- Data[trainIndex,]
 data_test <- Data[-trainIndex,]
 
-### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
-### Generalized Linear Models (Frequency)
-### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
-
-# For claim frequency, suitable distributions are: Poisson and/or Negative Binomial.
-# In this study, there will be opted to use the Poisson distribution.
-
-fam <- poisson
-g1 <- glm(freq~1, family = fam, offset = log(expo), data = Data)
-g2 <- glm(freq~agecar, family = fam, offset = log(expo), data = Data)
-g3 <- glm(freq~ageph, family = fam, offset = log(expo), data = Data)
-g4 <- glm(freq~cover, family = fam, offset = log(expo), data = Data)
-g5 <- glm(freq~fleet, family = fam, offset = log(expo), data = Data)
-g6 <- glm(freq~fuel, family = fam, offset = log(expo), data = Data)
-g7 <- glm(freq~power, family = fam, offset = log(expo), data = Data)
-g8 <- glm(freq~sexph, family = fam, offset = log(expo), data = Data)
-g9 <- glm(freq~split, family = fam, offset = log(expo), data = Data)
-g10 <- glm(freq~sportc, family = fam, offset = log(expo), data = Data)
-g11 <- glm(freq~use, family = fam, offset = log(expo), data = Data)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# # Plotting histograms or density plots for all variates 
-# ggplot(Data, aes(x=freq))+
-#   geom_bar(fill = KUL)+
-#   ggtitle("Claim Frequency")+
-#   labs(y = "Count", x = "Claim frequency during period of exposure")
-# 
-# ggplot(Data, aes(x=ageph))+
-#   geom_density(color = KUL)+
-#   ggtitle("")+
-#   labs(y = "Count", x = "Claim frequency during period of exposure")
-# 
-# 
-# # Quick linear model to see the sign of influence between variables on frequency
-# lm(freq~., data = Data)[1]
-#   # Obviously very small values, because a lot of 0-values in frequency
-# 
-# 
-# ggplot(Data, aes(x=freq),
-#        xlab = "Claim frequency in exposure",
-#        ylab = "Count")+
-#   geom_bar()+
-#   ggtitle("Histogram Claim Frequency")
-# ggplot(Data, aes(x=sexph))+
-#   geom_bar()
-# 
-# hist(Data$sexph)
-# hist(Data$ageph)
-# hist(Data$agecar)
-
+# data_train is used to calibrate and bin the continuous variables, later
+# model_train will be made with the same indices, but with binned variables 
 
 
 ### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
@@ -498,34 +395,79 @@ Data$geo <- factor(Data$geo, ordered = T, levels = levels(Data$geo), labels = le
 ### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
 ### Binning ageph (Frequency)
 ### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+freq_gam_opt_geo <- gam(freq ~ s(ageph) + geo + power + cover + fleet + split 
+                           + fuel + sexph + agecar, offset = log(expo), 
+                           method = "REML", data = data_train,
+                           family = poisson(link = "log")) 
+  # Use the optimal GAM found for spatial binning, with 'geo' adjusted 
+
+getGAMdata_single = function(model, term, var, varname){
+  pred <- predict(model, type= "terms", terms =term)
+  dt_pred <- tibble("x" = var, pred)
+  dt_pred <- arrange(dt_pred, x)
+  names(dt_pred) <- c("x", "s")
+  dt_unique <- unique(dt_pred)
+  dt_exp <- dt_pred%>% group_by(x) %>% summarize(tot=n())
+  dt_exp <- dt_exp[c("x", "tot")]
+  GAM_data <- left_join(dt_unique, dt_exp)
+  names(GAM_data) <- c(varname, "s", "tot")
+  GAM_data <- GAM_data[which(GAM_data$tot !=0), ]
+  return(GAM_data)
+}
+
+gam_ageph <- getGAMdata_single(freq_gam_opt_geo, "s(ageph)", data_train$ageph, "ageph")
+ctrl.freq <- evtree.control(alpha = 100, maxdepth = 5, 
+                            minbucket = 0.05*nrow(data_train), 
+                            minsplit = 0.10*nrow(data_train))
+  # Alpha controls the complexity: higher alpha is higher penalty for complexity and thus simpler model
+evtree_freq_ageph <- evtree(s ~ ageph, data = gam_ageph, weights = tot, 
+                               control = ctrl.freq )
+plot(evtree_freq_ageph)
+
+#extract the points from the tree model 
+splits_evtree = function(evtreemodel, GAMvar, DTvar){
+  preds <- predict(evtreemodel, type= "node")
+  nodes <- data.frame("x"= GAMvar, "nodes" = preds)
+  nodes$change <- c(0, pmin(1,diff(nodes$nodes)))
+  splits_evtree<- unique(c(min(DTvar), 
+                           nodes$x[which(nodes$change == 1)], 
+                           max(DTvar)))
+  return(splits_evtree)
+}
+
+freq_splits_ageph <- splits_evtree(evtree_freq_ageph, gam_ageph$ageph, 
+                                    data_train$ageph)
+
+freq_splits_ageph # 17 26 29 32 35 38 51 55 59 63 73 95
+
+breaks_ageph <- freq_splits_ageph
+group_ageph <- cut(Data$ageph,
+                   breaks = breaks_ageph, include.lowest = T,
+                   right = FALSE)
+
+Data$agephGR <- group_ageph
+
+# Set labels correctly
+str(Data)
+Data$agephGR <- factor(Data$agephGR, levels = levels(Data$agephGR), labels = levels(Data$agephGR), ordered = T)
+Data$agecar <- factor(Data$agecar, levels = levels(Data$agecar), labels = levels(Data$agecar), ordered = T)
+Data$sexph <- factor(Data$sexph, levels = levels(Data$sexph), labels = levels(Data$sexph), ordered = F)
+Data$fuel <- factor(Data$fuel, levels = levels(Data$fuel), labels = levels(Data$fuel), ordered = F)
+Data$split <- factor(Data$split, levels = levels(Data$split), labels = levels(Data$split), ordered = T)
+Data$use <- factor(Data$use, levels = levels(Data$use), labels = levels(Data$use), ordered = F)
+Data$fleet <- factor(Data$fleet, levels = levels(Data$fleet), labels = levels(Data$fleet), ordered = F)
+Data$sportc <- factor(Data$sportc, levels = levels(Data$sportc), labels = levels(Data$sportc), ordered = F)
+Data$cover <- factor(Data$cover, levels = levels(Data$cover), labels = levels(Data$cover), ordered = F)
+Data$power <- factor(Data$power, levels = levels(Data$power), labels = levels(Data$power), ordered = T)
+Data$geo <- factor(Data$geo, levels = levels(Data$geo), labels = levels(Data$geo), ordered = T)
+str(Data)
 
 
+FINALDF <- Data[,c(-1,-2,-14,-15)] # rm 'postal', cont. 'ageph', 'long', 'lat'
+names(FINALDF)
+str(FINALDF)
+summary(FINALDF)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+model_train <- FINALDF[trainIndex,]
+model_test <- FINALDF[-trainIndex,]  
 
