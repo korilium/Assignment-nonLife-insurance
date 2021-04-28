@@ -18,6 +18,7 @@ library(classInt)
 library(evtree)
 library(rbin)
 library(caret)
+library(RColorBrewer)
 
 KUL <- "#116E8A"
 
@@ -159,7 +160,6 @@ data_train %>% group_by(power) %>% summarize(tot_freq = sum(freq), tot_expo = su
 # By comparing Data and data_train, we can see whether the training data is a good sample for the full dataset
 
 
-
 # Frequency variable - descriptives 
 freq_emp_mean <- sum(Data$freq) / sum(Data$expo)
 freq_emp_var <- sum((Data$freq - freq_emp_mean*Data$expo)^2)/sum(Data$expo)
@@ -197,30 +197,6 @@ freq_emp_var_train     # 0.1520487
 g_shapefile
 
 
-## Binning spatial data 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Checking the individual impact of each covariate on dependent variable 
 # NOTE: when independent variable is a factor with >2 levels, R makes k-1 dummies for linear model 
 lm(freq~agecar, data = Data)[1] 
@@ -256,7 +232,6 @@ trainIndex <- createDataPartition(Data$freq, times = 1, p = 0.8, list = FALSE, g
 
 data_train <- Data[trainIndex,]
 data_test <- Data[-trainIndex,]
-
 
 ### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
 ### Generalized Linear Models (Frequency)
@@ -305,14 +280,6 @@ g11 <- glm(freq~use, family = fam, offset = log(expo), data = Data)
 #   geom_density(color = KUL)+
 #   ggtitle("")+
 #   labs(y = "Count", x = "Claim frequency during period of exposure")
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
 # 
 # 
 # # Quick linear model to see the sign of influence between variables on frequency
@@ -406,7 +373,6 @@ logLik(gam5) # -50256.22
 logLik(gam6) # -50528.10
 logLik(gam7) # -50535.65
 
-
 AIC(gam1) # 100595.9 (!)
 AIC(gam2) # 100597.7 (!)
 AIC(gam3) # 101124.2
@@ -451,7 +417,7 @@ BIC_comp <- c()
 breaks <- list()
 crp <- colorRampPalette(c("#99CCFF", "#003366"))  
 
-for(j in 2:15){
+for(j in 2:20){
   num_bins <- j
   classint_fisher <- classIntervals(dt_pred$spatial_pred_freq, num_bins, style = "fisher")
   breaks[[j]] <- classint_fisher$brks
@@ -473,13 +439,26 @@ for(j in 2:15){
                          family = poisson(link = "log")))
 }
 
+names(AIC_comp) <- 1:20
+names(BIC_comp) <- 1:20
 
-num_bins <- 5 # Fixed for now, make tuning parameter later
+AIC_comp
+BIC_comp
+
+AIC_comp == min(AIC_comp, na.rm = T)  # 15
+BIC_comp == min(BIC_comp, na.rm = T)  # 11
+
+breaks
+
+# PART 3: using the results of the for-loop to adjust dataset 
+
+num_bins <- 11 # Based on the lowest BIC value 
 classint_fisher <- classIntervals(dt_pred$spatial_pred_freq, num_bins, style = "fisher")
 
-classint_fisher$brks            # -0.55779965 -0.32657131 -0.13823580 -0.01043908  0.14957887  0.39081850
-min(dt_pred$spatial_pred_freq)  # -0.5577996
-max(dt_pred$spatial_pred_freq)  # 0.3908185
+classint_fisher$brks            # -0.465118789 -0.341533023 -0.239718291 -0.178467058 -0.121691203 -0.064612749
+                                # -0.005696999  0.053323814  0.116731018  0.189453085  0.270987408  0.364478448
+min(dt_pred$spatial_pred_freq)  # -0.4651188
+max(dt_pred$spatial_pred_freq)  # 0.3644784
 
 crp <- colorRampPalette(c("#99CCFF", "#003366"))  
 plot(classint_fisher, crp(num_bins), xlab = expression(hat(f)(long,lat)), main = "Fisher binning for spatial effect on GAM prediction")
@@ -489,30 +468,36 @@ shape_Belgium$class_fisher <- cut(shape_Belgium$spatial_pred_freq,
                                     right = FALSE, include.lowest = TRUE, 
                                     dig.lab = 2) 
 
-ggplot(shape_Belgium) + theme_bw() + labs(fill = "Fisher") +
+crp2 <- colorRampPalette(brewer.pal(7, "Reds"))(11)  # RED
+crp3 <- colorRampPalette(brewer.pal(7, "Blues"))(11) # BLUE
+
+ggplot(shape_Belgium) + theme_bw() + labs(fill = "Fisher") +  # RED
   geom_sf(aes(fill = class_fisher), colour = NA) +
-  ggtitle("MTPL claim frequency data") +
-  scale_fill_brewer(palette = "Blues", na.value = "white") +
+  ggtitle("Frequency data - binned spatial") +
+  scale_fill_manual(values = crp2, na.value = "white") +
   theme_bw()
 
-df_geo$postal <- as.numeric(df_geo$postal)
+ggplot(shape_Belgium) + theme_bw() + labs(fill = "Fisher") +  # BLUE
+  geom_sf(aes(fill = class_fisher), colour = NA) +
+  ggtitle("Frequency data - binned spatial") +
+  scale_fill_manual(values = crp3, na.value = "white") +
+  theme_bw()
 
+# Adjust initial dataset 
+df_geo$postal <- as.numeric(df_geo$postal)
 df_geo <- Data %>% dplyr::select(freq,ageph,expo,power, cover, fleet, split, fuel, sexph, agecar,postal)
 df_geo <- left_join(df_geo,dt_pred, by = c("postal" = "pc"))
 df_geo$geo <- as.factor(cut(df_geo$spatial_pred_freq, 
                               breaks = classint_fisher$brks, right = FALSE, 
                               include.lowest = TRUE, dig.lab = 2))
 
-
-gam(freq ~ s(ageph) + geo + power + cover + fleet + split 
-            + fuel + sexph + agecar, offset = log(expo), method = "REML", data = df_geo,
-            family = poisson(link = "log"))$aic
+Data$geo <- df_geo$geo
+Data$geo <- factor(Data$geo, ordered = T, levels = levels(Data$geo), labels = levels(Data$geo))
 
 
-
-
-
-
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### Binning ageph (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
 
 
 
