@@ -61,14 +61,75 @@ test <- Data[-trainIndex,]
 #logclaims
 train$logclaimAm <- log(train$claimAm)
 
-#################binning age and spatial  ####################################
 
-#extracting  Long and Lat
+#save dataset
+write.csv(train, file = "Severity_Analysis/train.csv")
+
+#remove elements with no claimamount
+train_nozero <- subset(train, train$claimAm != 0)
+dim(train_nozero)
+
+
+################# binning age and spatial  ####################################
+
+
+# estimate expected claim amount with only spatial effects
+
+gam_spatial <- gam(claimAm ~s(LONG, LAT, bs = "tp"), family = Gamma(link="log"), data = train_nozero)
+plot(gam_spatial, scheme = 2)
+
+#xtracting long and lat 
 post_dt <- st_centroid(belgium_shape_sf)
 post_dt$LONG<- do.call(rbind, post_dt$geometry)[,1]
 post_dt$LAT <- do.call(rbind, post_dt$geometry)[,2]
 
+#create prediction dataframe 
+pred  <- predict(gam_spatial, newdata = post_dt, type= "terms", 
+                 terms = 's(LONG,LAT)')
+pred_dt <- data.frame(pc = post_dt$POSTCODE, 
+                      LONG= post_dt$LONG, 
+                      LAT = post_dt$LAT, pred)
+names(pred_dt)[4] <- "fit_spatial"
+belgium_shape_sf <- left_join(belgium_shape_sf, 
+                              pred_dt, by = c("POSTCODE" = "pc"))
 
+
+#plot result 
+tm_shape(belgium_shape_sf) + 
+  tm_borders(col = 'white', lwd = .1 )+
+  tm_fill("fit_spatial", style = "cont",
+  palette = "RdBu", legend.reverse = TRUE, 
+  midpoint = TRUE) + 
+  tm_layout(legend.title.size = 1.0 , 
+            legend.text.size = 1.0 )
+
+
+
+
+
+
+#binning spatial effect 
+classint_fisher <- classIntervals(
+                    pred_dt$fit_spatial,9, 
+                   style= "fisher")
+
+classint_fisher$brks
+crp <- colorRampPalette(c("#99CCFF", "#003366"))
+plot(classint_fisher, crp(5),
+     xlab = expression(hat(f)(long,lat)), 
+     main = "fisher")
+belgium_shape_sf$classint_fisher <- cut(belgium_shape_sf$fit_spatial, 
+     breaks = classint_fisher$brks, right= FALSE, 
+     include.lowest = TRUE, dig.lab = 2)
+
+ggplot(belgium_shape_sf)+ theme_bw()+
+labs(fill = "Fisher") + geom_sf(aes(fill = classint_fisher), colour = NA) + 
+ggtitle("MTPL claim amount") + 
+scale_fill_brewer(palette = "Blues", na.value = "white") + 
+theme_bw()
+
+
+#new predict based on binning 
 pred  <- predict(gam_spatial, newdata = post_dt, type= "terms", 
                  terms = 's(LONG,LAT)')
 pred_dt <- data.frame(pc = post_dt$POSTCODE, 
@@ -77,17 +138,18 @@ pred_dt <- data.frame(pc = post_dt$POSTCODE,
 names(pred_dt)[4] <- "fit_spatial"
 
 # creating dataframe with binned spatial effect 
-names(pred_dt)[4] <- "fit_spatial"
-train_geo <- train
+train_geo <- train_nozero
 train_geo <- left_join(train_geo, pred_dt, by = c("postal" = "pc"))
 train_geo$geo <- as.factor(cut(train_geo$fit_spatial, 
      breaks = classint_fisher$brks, right=FALSE, 
      include.lowest=TRUE, dig.lab=2))
 
-freq_gam_geo <- gam(claimAm ~ cover + fuel + s(ageph) + geo, data = train_geo, family = Gamma(link = "log") )
+#test 
+freq_glm_geo <- glm(claimAm ~ cover + fuel + + geo, data = train_geo, family = Gamma(link = "log") )
 
 #binning age 
 
+claimAm_gam_geo <- gam(claimAm ~ cover + fuel + s(ageph) + geo, data = train_geo, family = Gamma(link = "log") )
 #getting the dataset for age 
 getGAMdata_single = function(model, term, var, varname){
      pred <- predict(model, type= "terms", terms =term)
@@ -103,7 +165,7 @@ getGAMdata_single = function(model, term, var, varname){
      return(GAM_data)
 }
 
-gam_ageph <- getGAMdata_single(freq_gam_geo, "s(ageph)", train_geo$ageph, "ageph")
+gam_ageph <- getGAMdata_single(claimAm_gam_geo, "s(ageph)", train_geo$ageph, "ageph")
 
 ctrl.freq <- evtree.control(alpha = 77, maxdepth = 5 )
 
@@ -132,132 +194,15 @@ claimAm_splits_ageph <- splits_evtree(evtree_claimAm_ageph,
 claimAm_splits_ageph
 
 breaks <- claimAm_splits_ageph
-group_ageph <- cut(train$ageph,
+group_ageph <- cut(train_nozero$ageph,
                     breaks = breaks, include.lowest = T,
                     right = FALSE)
 
-train$group_ageph <- group_ageph
-
-#save dataset
-write.csv(train, file = "Severity_Analysis/train.csv")
-
-#remove elements with no claimamount
-train_nozero <- subset(train, train$claimAm != 0)
-dim(train_nozero)
+train_nozero$group_ageph <- group_ageph
 
 
 
 
-# estimate expected claim amount with spatial effects 
-gam_spatial <- gam(claimAm ~s(LONG, LAT, bs = "tp"), family = Gamma(link="log"), data = train_nozero)
-plot(gam_spatial, scheme = 2)
-
-
-
-post_dt <- st_centroid(belgium_shape_sf)
-post_dt$LONG<- do.call(rbind, post_dt$geometry)[,1]
-post_dt$LAT <- do.call(rbind, post_dt$geometry)[,2]
-
-pred  <- predict(gam_spatial, newdata = post_dt, type= "terms", 
-                 terms = 's(LONG,LAT)')
-
-
-
-pred_dt <- data.frame(pc = post_dt$POSTCODE, 
-                      LONG= post_dt$LONG, 
-                      LAT = post_dt$LAT, pred)
-names(pred_dt)[4] <- "fit_spatial"
-
-
-belgium_shape_sf <- left_join(belgium_shape_sf, 
-                              pred_dt, by = c("POSTCODE" = "pc"))
-
-tm_shape(belgium_shape_sf) + 
-  tm_borders(col = 'white', lwd = .1 )+
-  tm_fill("fit_spatial", style = "cont",
-  palette = "RdBu", legend.reverse = TRUE, 
-  midpoint = TRUE) + 
-  tm_layout(legend.title.size = 1.0 , 
-            legend.text.size = 1.0 )
-
-#binning spatial effect 
-
-
-classint_fisher <- classIntervals(
-                    pred_dt$fit_spatial,5, 
-                   style= "fisher")
-
-classint_fisher$brks
-crp <- colorRampPalette(c("#99CCFF", "#003366"))
-plot(classint_fisher, crp(5),
-     xlab = expression(hat(f)(long,lat)), 
-     main = "fisher")
-belgium_shape_sf$classint_fisher <- cut(belgium_shape_sf$fit_spatial, 
-     breaks = classint_fisher$brks, right= FALSE, 
-     include.lowest = TRUE, dig.lab = 2)
-
-
-ggplot(belgium_shape_sf)+ theme_bw()+
-labs(fill = "Fisher") + geom_sf(aes(fill = classint_fisher), colour = NA) + 
-ggtitle("MTPL claim amount") + 
-scale_fill_brewer(palette = "Blues", na.value = "white") + 
-theme_bw()
-
-
-# creating dataframe with binned spatial effect 
-names(pred_dt)[4] <- "fit_spatial"
-train_geo <- train_nozero
-train_geo <- left_join(train_geo, pred_dt, by = c("postal" = "pc"))
-train_geo$geo <- as.factor(cut(train_geo$fit_spatial, 
-     breaks = classint_fisher$brks, right=FALSE, 
-     include.lowest=TRUE, dig.lab=2))
-
-freq_gam_geo <- gam(claimAm ~ cover + fuel + s(ageph) + geo, data = train_geo, family = Gamma(link = "log") )
-
-#binning age 
-
-#getting the dataset for age 
-getGAMdata_single = function(model, term, var, varname){
-     pred <- predict(model, type= "terms", terms =term)
-     dt_pred <- tibble("x" = var, pred)
-     dt_pred <- arrange(dt_pred, x)
-     names(dt_pred) <- c("x", "s")
-     dt_unique <- unique(dt_pred)
-     dt_exp <- dt_pred%>% group_by(x) %>% summarize(tot=n())
-     dt_exp <- dt_exp[c("x", "tot")]
-     GAM_data <- left_join(dt_unique, dt_exp)
-     names(GAM_data) <- c(varname, "s", "tot")
-     GAM_data <- GAM_data[which(GAM_data$tot !=0), ]
-     return(GAM_data)
-}
-
-gam_ageph <- getGAMdata_single(freq_gam_geo, "s(ageph)", train_geo$ageph, "ageph")
-
-ctrl.freq <- evtree.control(alpha = 77, maxdepth = 5 )
-
-evtree_claimAm_ageph <- evtree(s ~ ageph,
-                            data = gam_ageph, 
-                            weights = tot, 
-                            control = ctrl.freq )
-
-plot(evtree_claimAm_ageph)
-
-
-#extract the points from the tree model 
-splits_evtree = function(evtreemodel, GAMvar, DTvar){
-     preds <- predict(evtreemodel, type= "node")
-     nodes <- data.frame("x"= GAMvar, "nodes" = preds)
-     nodes$change <- c(0, pmin(1,diff(nodes$nodes)))
-     splits_evtree<- unique(c(min(DTvar), 
-     nodes$x[which(nodes$change == 1)], 
-     max(DTvar)))
-     return(splits_evtree)
-}
-
-claimAm_splits_ageph <- splits_evtree(evtree_claimAm_ageph, 
-                                      gam_ageph$ageph, 
-                                      train_nozero$ageph)
-claimAm_splits_ageph     
 
 ### using lasso and ridge regresion with carret 
 
