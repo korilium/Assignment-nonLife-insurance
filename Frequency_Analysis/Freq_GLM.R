@@ -224,7 +224,7 @@ glm_opt <- glm8.7
 summary(glm_opt)
 anova(glm0, glm_opt, test = "Chisq") # ***, p-value: < 2.2e-16
 
-
+### Results are summarized in the added Excel-file for convenience sake 
 
 
 
