@@ -26,10 +26,10 @@ gbm_0 <- gbm(freq ~ offset(log(expo)) + ageph + geo + agecar + sexph + fuel # mi
              data = gbm_train,
              distribution = "poisson",
              n.trees = 1000,          # First try 500 -> insufficient, then 1000 -> insufficient for cv, then 1500 or 2000
-             interaction.depth = 3,   # model up to 2-way interactions
+             interaction.depth = 2,   # model up to 2-way interactions
              shrinkage = 0.01,        # 0.01 learning rate (low -> better performance, increase computation time)
              bag.fraction = 0.75,     # each step uses a subsample size delta*n
-             cv.folds = 10,           # use 5- or 10-fold CV 
+             cv.folds = 5,            # use 5- or 10-fold CV 
              verbose = F,             # do not print progress 
              keep.data = T,
              train.fraction = 1,      # use full training dataset 
@@ -40,7 +40,7 @@ gbm_0 <- gbm(freq ~ offset(log(expo)) + ageph + geo + agecar + sexph + fuel # mi
 # Hyper Parameters: shrinkage (lambda = 0.01), bag.fraction (delta = 0.75) -> Values based on paper of Roel
 
 gbm_0   # There were 11 predictors of which 8 had non-zero influence.
-summary(gbm_0) # use, fleet, sportc do not have a non-zero influence 
+summary(gbm_0) # use, fleet, sportc do not have a non-zero influence, possibly because there are few observations of the 'other' case
     # ageph, split and geo are the most important ! 
 
 plot(gbm_0$train.error, type = "l", main = "Training error per iteration",
@@ -52,7 +52,7 @@ gbm_0$train.error[gbm_0$n.trees]
 # interaction.depth = 2
   # CV = 5
   # n.tree = 500  -> 0.7515610
-  # n.tree = 1000 -> 0.7505098
+  # n.tree = 1000 -> 0.7505098  (!)
   # n.tree = 1500 -> 0.7502090
   # n.tree = 2000 -> 0.7500273
 
@@ -136,7 +136,7 @@ gbm_best_i_cv
 
 # use max n.trees = 1000, with optimal n.trees = 681 and 5fold cv
 
-n.trees_opt <- 538    # interaction.depth = 3, n.trees = 1000, CV =10
+n.trees_opt <- 681    # interaction.depth = 3, n.trees = 1000, CV =10
 
 
 
@@ -167,8 +167,6 @@ plot(gbm_0, 10, n.trees_opt, type = "response")
 plot(gbm_0, 11, n.trees_opt, type = "response")
 
 
-##### Individual Conditional Expectation Plots 
-### needed??? 
 
 
 
