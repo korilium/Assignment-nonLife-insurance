@@ -15,6 +15,7 @@ library(glmnet)
 library(readxl)
 library(classInt)
 library(evtree)
+
 hgd()
 hgd_browse()
 KULbg <- "#116e8a"
@@ -31,7 +32,7 @@ inspost <- read_excel("toledo files//inspost.xls")
 #name change
 Mdata$claimAm <- toledo$chargtot
 #ann freq delete
-data <- Mdata %>% select(-freq_ann)
+data <- Mdata %>% select(-freq)
 
 
 # adding long an lat from special dataframe post_dt (can take 5 min to load )
@@ -72,80 +73,76 @@ dim(train_nozero)
 
 ################# binning age and spatial  ####################################
 
-
-# estimate expected claim amount with only spatial effects
-
 gam_spatial <- gam(claimAm ~s(LONG, LAT, bs = "tp"), family = Gamma(link="log"), data = train_nozero)
-plot(gam_spatial, scheme = 2)
-
-#xtracting long and lat 
-post_dt <- st_centroid(belgium_shape_sf)
-post_dt$LONG<- do.call(rbind, post_dt$geometry)[,1]
-post_dt$LAT <- do.call(rbind, post_dt$geometry)[,2]
-
-#create prediction dataframe 
-pred  <- predict(gam_spatial, newdata = post_dt, type= "terms", 
-                 terms = 's(LONG,LAT)')
-pred_dt <- data.frame(pc = post_dt$POSTCODE, 
-                      LONG= post_dt$LONG, 
-                      LAT = post_dt$LAT, pred)
-names(pred_dt)[4] <- "fit_spatial"
-belgium_shape_sf <- left_join(belgium_shape_sf, 
-                              pred_dt, by = c("POSTCODE" = "pc"))
-
-
-#plot result 
-tm_shape(belgium_shape_sf) + 
-  tm_borders(col = 'white', lwd = .1 )+
-  tm_fill("fit_spatial", style = "cont",
-  palette = "RdBu", legend.reverse = TRUE, 
-  midpoint = TRUE) + 
-  tm_layout(legend.title.size = 1.0 , 
-            legend.text.size = 1.0 )
-
-
-
-
-
-
-#binning spatial effect 
-classint_fisher <- classIntervals(
-                    pred_dt$fit_spatial,9, 
-                   style= "fisher")
-
-classint_fisher$brks
-crp <- colorRampPalette(c("#99CCFF", "#003366"))
-plot(classint_fisher, crp(5),
-     xlab = expression(hat(f)(long,lat)), 
-     main = "fisher")
-belgium_shape_sf$classint_fisher <- cut(belgium_shape_sf$fit_spatial, 
-     breaks = classint_fisher$brks, right= FALSE, 
-     include.lowest = TRUE, dig.lab = 2)
-
-ggplot(belgium_shape_sf)+ theme_bw()+
-labs(fill = "Fisher") + geom_sf(aes(fill = classint_fisher), colour = NA) + 
-ggtitle("MTPL claim amount") + 
-scale_fill_brewer(palette = "Blues", na.value = "white") + 
-theme_bw()
-
 
 #new predict based on binning 
 pred  <- predict(gam_spatial, newdata = post_dt, type= "terms", 
                  terms = 's(LONG,LAT)')
 pred_dt <- data.frame(pc = post_dt$POSTCODE, 
+                    LONG= post_dt$LONG, 
                       LONG= post_dt$LONG, 
-                      LAT = post_dt$LAT, pred)
+                    LONG= post_dt$LONG, 
+                    LAT = post_dt$LAT, pred)
 names(pred_dt)[4] <- "fit_spatial"
 
 # creating dataframe with binned spatial effect 
 train_geo <- train_nozero
 train_geo <- left_join(train_geo, pred_dt, by = c("postal" = "pc"))
-train_geo$geo <- as.factor(cut(train_geo$fit_spatial, 
+
+#find optimal number of bins 
+AIC_comp <- c()
+BIC_comp <- c()
+breaks <- list()
+crp <- colorRampPalette(c("#99CCFF", "#003366"))
+
+for( j in 2:15){
+     num_bins <- j
+     classint_fisher <- classIntervals(pred_dt$fit_spatial, 
+                num_bins, style= "fisher")
+
+     breaks[[j]] <- classint_fisher$brks
+
+
+     belgium_shape_sf$classint_fisher <- cut(belgium_shape_sf$fit_spatial, 
+     breaks = classint_fisher$brks, right= FALSE, 
+     include.lowest = TRUE, dig.lab = 2)
+
+
+
+     train_geo$geo <- as.factor(cut(train_geo$fit_spatial, 
      breaks = classint_fisher$brks, right=FALSE, 
      include.lowest=TRUE, dig.lab=2))
 
-#test 
-freq_glm_geo <- glm(claimAm ~ cover + fuel + + geo, data = train_geo, family = Gamma(link = "log") )
+     AIC_comp[j] <- gam(claimAm ~s(ageph) + geo +power + cover + fleet + split +
+                    fuel + sexph + agecar, method = "REML", data = train_geo, 
+                    family = Gamma(link = "log"))$aic
+     BIC_comp[j] <- BIC(gam(claimAm ~s(ageph) + geo +power + cover + fleet + split +
+                    fuel + sexph + agecar, method = "REML", data = train_geo, 
+                    family = Gamma(link = "log")))
+}
+
+plot(1:15, AIC_comp, type="l")
+plot(1:15, BIC_comp, type="l")
+
+#create bins for spatial data using optimal bins = 12 following BIC 
+     num_bins <- 12
+     classint_fisher <- classIntervals(pred_dt$fit_spatial, 
+                num_bins, style= "fisher")
+
+     breaks <- classint_fisher$brks
+
+
+     belgium_shape_sf$classint_fisher <- cut(belgium_shape_sf$fit_spatial, 
+     breaks = classint_fisher$brks, right= FALSE, 
+     include.lowest = TRUE, dig.lab = 2)
+
+
+
+     train_geo$geo <- as.factor(cut(train_geo$fit_spatial, 
+     breaks = classint_fisher$brks, right=FALSE, 
+     include.lowest=TRUE, dig.lab=2))
+     #test 
+     freq_glm_geo <- glm(claimAm ~ cover + fuel + geo, data = train_geo, family = Gamma(link = "log") )
 
 #binning age 
 
@@ -200,10 +197,42 @@ group_ageph <- cut(train_nozero$ageph,
 
 train_nozero$group_ageph <- group_ageph
 
+train_geo$group_ageph <- group_ageph
+# test 
+ freq_glm_geo <- glm(claimAm ~ cover + fuel + geo + group_ageph, data = train_geo, family = Gamma(link = "log") )
 
 
+#created weighted claimamount 
+train_geo$weighted_claimAm <- train_geo$claimAm/train_geo$freq
+
+# save new dataset
+write.csv(train_geo, file = "Severity_Analysis/train_geo.csv")
 
 
 ### using lasso and ridge regresion with carret 
 
+myControl <- trainControl(method = "cv", number = 10,   allowParallel = TRUE,
+                          savePredictions = "all")
 
+
+
+n <- dim(train_geo)[1]
+glm1 <- glm(weighted_claimAm ~  group_ageph + agecar +
+                sexph + fuel + split + use 
+                +fleet + sportc +cover + power + 
+                geo + agecar*cover + use*fleet + 
+                sexph*fleet + sportc*power + geo*split , 
+               data = train_geo,
+               family = Gamma(link = "log"))
+
+library(MASS)
+#AIC
+stepAIC(glm1, direcion = "forward", k=2,scope = list(upper=~group_ageph + agecar +
+                sexph + fuel + split + use 
+                +fleet + sportc +cover + power + 
+                geo + agecar*cover + use*fleet + 
+                sexph*fleet + sportc*power + geo*split , lower =~1), trace =TRUE)
+
+
+
+plot(glm_net)
