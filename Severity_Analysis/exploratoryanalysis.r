@@ -12,20 +12,20 @@ library(sf)
 hgd()
 hgd_browse()
 
-data <- read.csv2(file = "Severity_Analysis/train.csv", sep = ",")
+data <- read.csv2(file = "Severity_Analysis/train_geo.csv", sep = ",")
 belgium_shape_sf <- st_read('Severity_Analysis//shape file Belgie postcodes//npc96_region_Project1.shp', quiet = TRUE)
 belgium_shape_sf <- st_transform(belgium_shape_sf, "+proj=longlat +datum=WGS84")
 class(belgium_shape_sf)
 
 # factorize 
 Data <- as.data.frame(data)
-train <- Data %>% select(-X) %>%
- mutate(across(c(claimAm, LAT, LONG), as.numeric)) %>%
- mutate(across(c(agecar, sexph, power, split, fuel, use, fleet, sportc, cover, ageph, group_ageph), as.factor))
+train <- Data %>% select(-X, -LONG.x, -LAT.x) %>%
+ mutate(across(c(claimAm, LAT.y, LONG.y, fit_spatial, weighted_claimAm, logclaimAm, ageph), as.numeric)) %>%
+ mutate(across(c(agecar, sexph, power, split, fuel, use, fleet, sportc, cover, group_ageph, geo), as.factor))
 
 #take elements with claimam and create logclaimam variable 
 train_nozero <- subset(train, Data$claimAm != 0)
-train_nozero$logclaimAm <- log(train_nozero$claimAm)
+
 
 
 
@@ -34,7 +34,7 @@ dim(train_nozero)
 
 ######### exploratory data analysis ##############
 #plot density claimAm 
-ggplot(train_nozero, aes(x = claimAm)) +
+ggplot(train_nozero, aes(x = weighted_claimAm)) +
 geom_density() +
 scale_x_continuous(trans = 'log2') +
 geom_histogram(aes(y = ..density..), bins = 20,fill = "#116e8a", color = "white", alpha = 0.7) +
@@ -90,8 +90,3 @@ Data_quali <- train_nozero[Data_group$col.qual]
 tree <- hclustvar(X.quanti = Data_quanti, X.quali = Data_quali)
 plot(tree)
 
-# mean, variance skewnnes and kurtosis
-sapply(Data_quanti, mean)
-sapply(Data_quanti, var)
-sapply(Data_quanti, skewness)
-sapply(Data_quanti, kurtosis)
