@@ -20,8 +20,8 @@ class(belgium_shape_sf)
 
 # factorize 
 Data <- as.data.frame(data)
-train <- Data %>% select(-X, -LONG.x, -LAT.x) %>%
- mutate(across(c(claimAm, LAT.y, LONG.y, fit_spatial,  ageph, freq_ann), as.numeric)) %>%
+train <- Data %>% select(-X, -LONG.x, -LAT.x, -LAT.y,- LONG.y) %>%
+ mutate(across(c(claimAm, fit_spatial,  ageph, freq_ann), as.numeric)) %>%
  mutate(across(c(agecar, sexph, power, split, fuel, use, fleet, sportc, cover, group_ageph, geo), as.factor))
 
 #take elements with claimam and create logclaimam variable 
