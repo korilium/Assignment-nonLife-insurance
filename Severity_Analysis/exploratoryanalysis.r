@@ -9,6 +9,7 @@ library(httpgd)
 library(skimr)
 library(DataExplorer)
 library(sf)
+library(interactions)
 hgd()
 hgd_browse()
 
@@ -19,8 +20,8 @@ class(belgium_shape_sf)
 
 # factorize 
 Data <- as.data.frame(data)
-train <- Data %>% select(-X, -LONG.x, -LAT.x) %>%
- mutate(across(c(claimAm, LAT.y, LONG.y, fit_spatial, weighted_claimAm, logclaimAm, ageph), as.numeric)) %>%
+train <- Data %>% select(-X, -LONG.x, -LAT.x, -LAT.y,- LONG.y) %>%
+ mutate(across(c(claimAm, fit_spatial,  ageph, freq_ann), as.numeric)) %>%
  mutate(across(c(agecar, sexph, power, split, fuel, use, fleet, sportc, cover, group_ageph, geo), as.factor))
 
 #take elements with claimam and create logclaimam variable 
@@ -34,7 +35,7 @@ dim(train_nozero)
 
 ######### exploratory data analysis ##############
 #plot density claimAm 
-ggplot(train_nozero, aes(x = weighted_claimAm)) +
+ggplot(train_nozero, aes(x = claimAm)) +
 geom_density() +
 scale_x_continuous(trans = 'log2') +
 geom_histogram(aes(y = ..density..), bins = 20,fill = "#116e8a", color = "white", alpha = 0.7) +
