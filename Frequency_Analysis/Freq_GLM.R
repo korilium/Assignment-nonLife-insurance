@@ -39,19 +39,19 @@ g_dendogram <- plot(tree)
 tot_degr_free <- 4*2*2*4*2*2*2*3*3*11*11
   
   
-#### JUST SOME TESTING
-# without interactions
-summary(glm(freq ~ agephGR + geo + power + cover + sportc + fleet + use + split + fuel + sexph + agecar,
-    data = model_train, family = poisson, offset = log(expo)))
-
-# with interaction (based on Dendogram)
-summary(glm(freq ~ agephGR + geo + power + cover + sportc + fleet + use + split + fuel + sexph + agecar
-            + agephGR:split + sportc:power + agecar:cover + use:fleet,
-            data = model_train, family = poisson, offset = log(expo)))
-
-
-# only intercept 
-glm(freq ~ 1, data = model_train, family = poisson, offset = log(expo))
+# #### JUST SOME TESTING
+# # without interactions
+# summary(glm(freq ~ agephGR + geo + power + cover + sportc + fleet + use + split + fuel + sexph + agecar,
+#     data = model_train, family = poisson, offset = log(expo)))
+# 
+# # with interaction (based on Dendogram)
+# summary(glm(freq ~ agephGR + geo + power + cover + sportc + fleet + use + split + fuel + sexph + agecar
+#             + agephGR:split + sportc:power + agecar:cover + use:fleet,
+#             data = model_train, family = poisson, offset = log(expo)))
+# 
+# 
+# # only intercept 
+# glm(freq ~ 1, data = model_train, family = poisson, offset = log(expo))
 
 
 ### theory 
