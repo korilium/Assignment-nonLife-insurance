@@ -142,7 +142,6 @@ n.trees_opt <- 681    # interaction.depth = 2, n.trees = 1000, CV = 5
 ##### Partial Dependence Plots (PDP)
 plot(gbm_0, 1, n.trees_opt)
 plot(gbm_0, 2, n.trees_opt) + theme(axis.text.x = element_text(angle = 60, hjust = 1))
-
 plot(gbm_0, 3, n.trees_opt)
 plot(gbm_0, 4, n.trees_opt)
 plot(gbm_0, 5, n.trees_opt)
@@ -155,7 +154,6 @@ plot(gbm_0, 11, n.trees_opt)
 
 grid.arrange(
 plot(gbm_0, 1, n.trees_opt, type = "response"),
-plot(gbm_0, 2, n.trees_opt, type = "response"),
 plot(gbm_0, 3, n.trees_opt, type = "response"),
 plot(gbm_0, 4, n.trees_opt, type = "response"),
 plot(gbm_0, 5, n.trees_opt, type = "response"),
@@ -164,7 +162,10 @@ plot(gbm_0, 7, n.trees_opt, type = "response"),  # Barely any difference, insign
 plot(gbm_0, 8, n.trees_opt, type = "response"),  # Barely any difference, insignificant FLEET
 plot(gbm_0, 9, n.trees_opt, type = "response"),  # Barely any difference, insignificant SPORTC
 plot(gbm_0, 10, n.trees_opt, type = "response"),
-plot(gbm_0, 11, n.trees_opt, type = "response"), ncol=4)
+plot(gbm_0, 11, n.trees_opt, type = "response"), 
+ncol=4, top = textGrob("Partial Dependency Plots",gp=gpar(fontsize=17,font=3)))
+
+plot(gbm_0, 2, n.trees_opt, type = "response", main = textGrob("Partial Dependency Plot - geo",gp=gpar(fontsize=17,font=3)))
 
 gbm_perf <- gbm(freq ~ offset(log(expo)) + ageph + geo + agecar + sexph + fuel 
              + split + use + fleet + sportc + cover + power,
