@@ -1,5 +1,6 @@
 ---
-title: "test"
+title: "Assignment: build a tariff plan"
+Author: "Ignace Decocq, Mathijs Gerits, Dieter Maes"
 output: html_document
 ---
 

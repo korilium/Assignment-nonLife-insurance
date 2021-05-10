@@ -39,19 +39,19 @@ g_dendogram <- plot(tree)
 tot_degr_free <- 4*2*2*4*2*2*2*3*3*11*11
   
   
-#### JUST SOME TESTING
-# without interactions
-summary(glm(freq ~ agephGR + geo + power + cover + sportc + fleet + use + split + fuel + sexph + agecar,
-    data = model_train, family = poisson, offset = log(expo)))
-
-# with interaction (based on Dendogram)
-summary(glm(freq ~ agephGR + geo + power + cover + sportc + fleet + use + split + fuel + sexph + agecar
-            + agephGR:split + sportc:power + agecar:cover + use:fleet,
-            data = model_train, family = poisson, offset = log(expo)))
-
-
-# only intercept 
-glm(freq ~ 1, data = model_train, family = poisson, offset = log(expo))
+# #### JUST SOME TESTING
+# # without interactions
+# summary(glm(freq ~ agephGR + geo + power + cover + sportc + fleet + use + split + fuel + sexph + agecar,
+#     data = model_train, family = poisson, offset = log(expo)))
+# 
+# # with interaction (based on Dendogram)
+# summary(glm(freq ~ agephGR + geo + power + cover + sportc + fleet + use + split + fuel + sexph + agecar
+#             + agephGR:split + sportc:power + agecar:cover + use:fleet,
+#             data = model_train, family = poisson, offset = log(expo)))
+# 
+# 
+# # only intercept 
+# glm(freq ~ 1, data = model_train, family = poisson, offset = log(expo))
 
 
 ### theory 
@@ -225,6 +225,31 @@ summary(glm_opt)
 anova(glm0, glm_opt, test = "Chisq") # ***, p-value: < 2.2e-16
 
 ### Results are summarized in the added Excel-file for convenience sake 
+# Model summary
+summ(glm_opt)
+
+
+### Trying to predict the number of claims of the training set 
+pred_GLM_train <- predict.glm(glm_opt, model_train, type = "response")
+pred_GLM_train
+
+GLM_comp_train <- as.data.frame(cbind(model_train$freq,pred_GLM_train))
+GLM_comp_train[,3] <- (GLM_comp_train[,1] - GLM_comp_train[,2])^2
+
+MSE_GLM_train <- sum(GLM_comp_train[,3])/length(GLM_comp_train[,3])
+MSE_GLM_train   # 0.133131659333354
+
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### Predict based on test-data (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+pred_GLM <- predict.glm(glm_opt, model_test, type = "response")
+pred_GLM
+
+GLM_comp <- as.data.frame(cbind(model_test$freq,pred_GLM))
+GLM_comp[,3] <- (GLM_comp[,1] - GLM_comp[,2])^2
+
+MSE_GLM_test <- sum(GLM_comp[,3])/length(GLM_comp[,3])
+MSE_GLM_test   # 0.131994852894684
 
 
 

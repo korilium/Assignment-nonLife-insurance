@@ -19,8 +19,10 @@ library(evtree)
 library(rbin)
 library(caret)
 library(RColorBrewer)
+library(jtools)
 
 KUL <- "#116E8A"
+
 
 # Making the data ready 
 # Data$chargtot <- NULL   # This analysis will only focus on frequency data
@@ -105,7 +107,7 @@ g_power <- ggplot(data_train, aes(power))+
   ggtitle("Relative Frequency - Power of car")+
   labs(y = "Relative frequency", x = "power")
 
-grid.arrange(g_freq,g_expo,g_agecar,g_ageph,g_cover,g_fleet,g_fuel,g_power,g_sexph,g_split,g_sportc, ncol=4)
+grid.arrange(g_freq,g_expo,g_agecar,g_ageph,g_cover,g_fleet,g_fuel,g_power,g_sexph,g_split,g_sportc,g_use, ncol=4)
 
 # Empirical frequency 
 Data %>% summarize(emp_freq = sum(freq) / sum(expo))   # 0.1393355
@@ -463,6 +465,9 @@ Data$geo <- factor(Data$geo, levels = levels(Data$geo), labels = levels(Data$geo
 str(Data)
 
 
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### Making final data frame (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
 FINALDF <- Data[,c(-1,-2,-14,-15)] # rm 'postal', cont. 'ageph', 'long', 'lat'
 names(FINALDF)
 str(FINALDF)
@@ -471,3 +476,10 @@ summary(FINALDF)
 model_train <- FINALDF[trainIndex,]
 model_test <- FINALDF[-trainIndex,]  
 
+total_train <- Data[trainIndex,]
+total_test <- Data[-trainIndex,]
+
+write.csv(total_train,"/Users/MathijsGerits/Documents/School/Semester 2/Datascience for non-life insurance/AA_ASSIGNMENT/Assignment-nonLife-insurance\\total_train.csv", row.names = FALSE)
+write.csv(total_test,"/Users/MathijsGerits/Documents/School/Semester 2/Datascience for non-life insurance/AA_ASSIGNMENT/Assignment-nonLife-insurance\\total_test.csv", row.names = FALSE)
+write.csv(trainIndex,"/Users/MathijsGerits/Documents/School/Semester 2/Datascience for non-life insurance/AA_ASSIGNMENT/Assignment-nonLife-insurance\\trainIndex.csv", row.names = FALSE)
+write.csv(Data,"/Users/MathijsGerits/Documents/School/Semester 2/Datascience for non-life insurance/AA_ASSIGNMENT/Assignment-nonLife-insurance\\Data.csv", row.names = FALSE)

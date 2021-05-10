@@ -136,14 +136,12 @@ gbm_best_i_cv
 
 # use max n.trees = 1000, with optimal n.trees = 681 and 5fold cv
 
-n.trees_opt <- 681    # interaction.depth = 3, n.trees = 1000, CV =10
+n.trees_opt <- 681    # interaction.depth = 2, n.trees = 1000, CV = 5
 
 
-
-
-##### Partial Dependence Plots 
+##### Partial Dependence Plots (PDP)
 plot(gbm_0, 1, n.trees_opt)
-plot(gbm_0, 2, n.trees_opt)
+plot(gbm_0, 2, n.trees_opt) + theme(axis.text.x = element_text(angle = 60, hjust = 1))
 plot(gbm_0, 3, n.trees_opt)
 plot(gbm_0, 4, n.trees_opt)
 plot(gbm_0, 5, n.trees_opt)
@@ -154,52 +152,54 @@ plot(gbm_0, 9, n.trees_opt)  # Barely any difference, insignificant SPORTC
 plot(gbm_0, 10, n.trees_opt)
 plot(gbm_0, 11, n.trees_opt)
 
-plot(gbm_0, 1, n.trees_opt, type = "response")
-plot(gbm_0, 2, n.trees_opt, type = "response")
-plot(gbm_0, 3, n.trees_opt, type = "response")
-plot(gbm_0, 4, n.trees_opt, type = "response")
-plot(gbm_0, 5, n.trees_opt, type = "response")
-plot(gbm_0, 6, n.trees_opt, type = "response")
-plot(gbm_0, 7, n.trees_opt, type = "response")  # Barely any difference, insignificant USE
-plot(gbm_0, 8, n.trees_opt, type = "response")  # Barely any difference, insignificant FLEET
-plot(gbm_0, 9, n.trees_opt, type = "response")  # Barely any difference, insignificant SPORTC
-plot(gbm_0, 10, n.trees_opt, type = "response")
-plot(gbm_0, 11, n.trees_opt, type = "response")
+grid.arrange(
+plot(gbm_0, 1, n.trees_opt, type = "response"),
+plot(gbm_0, 3, n.trees_opt, type = "response"),
+plot(gbm_0, 4, n.trees_opt, type = "response"),
+plot(gbm_0, 5, n.trees_opt, type = "response"),
+plot(gbm_0, 6, n.trees_opt, type = "response"),
+plot(gbm_0, 7, n.trees_opt, type = "response"),  # Barely any difference, insignificant USE
+plot(gbm_0, 8, n.trees_opt, type = "response"),  # Barely any difference, insignificant FLEET
+plot(gbm_0, 9, n.trees_opt, type = "response"),  # Barely any difference, insignificant SPORTC
+plot(gbm_0, 10, n.trees_opt, type = "response"),
+plot(gbm_0, 11, n.trees_opt, type = "response"), 
+ncol=4, top = textGrob("Partial Dependency Plots",gp=gpar(fontsize=17,font=3)))
+
+plot(gbm_0, 2, n.trees_opt, type = "response", main = textGrob("Partial Dependency Plot - geo",gp=gpar(fontsize=17,font=3)))
+
+gbm_perf <- gbm(freq ~ offset(log(expo)) + ageph + geo + agecar + sexph + fuel 
+             + split + use + fleet + sportc + cover + power,
+             data = gbm_train,
+             distribution = "poisson",
+             n.trees = n.trees_opt,   # Use optimal number of trees
+             interaction.depth = 2,   # Use optimal interaction depth
+             shrinkage = 0.01,        
+             bag.fraction = 0.75,     
+             cv.folds = 5,            # Use 5-fold, this is sufficient, 10 only has a marginal increase
+             verbose = F,             
+             keep.data = T,
+             train.fraction = 1,      
+             n.cores = 1,             
+             n.minobsinnode = 10000)  
+
+pred_GBM_train <- predict(gbm_perf, gbm_train, type = "response")*gbm_train$expo
+
+GBM_comp_train <- as.data.frame(cbind(gbm_train$freq,pred_GBM_train))
+GBM_comp_train[,3] <- (GBM_comp_train[,1] - GBM_comp_train[,2])^2
+
+MSE_GBM_train <- sum(GBM_comp_train[,3])/length(GBM_comp_train[,3])
+MSE_GBM_train   # 0.133352850489098
 
 
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### Predict based on test-data (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+pred_GBM <- predict(gbm_perf, gbm_test, type = "response")*gbm_test$expo
 
+GBM_comp <- as.data.frame(cbind(gbm_test$freq,pred_GBM))
+GBM_comp[,3] <- (GBM_comp[,1] - GBM_comp[,2])^2
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+MSE_GBM_test <- sum(GBM_comp[,3])/length(GBM_comp[,3])
+MSE_GBM_test   # 0.132005928946107
 
 
