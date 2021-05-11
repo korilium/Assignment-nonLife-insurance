@@ -48,6 +48,8 @@ train_index <- unlist(read.csv("Frequency_Analysis/trainIndex.csv", ",", header 
 train_geo <- data0[train_index, ]
 test_geo <- data0[train_index, ]
 
+# save new dataset
+write.csv(train_geo, file = "Severity_Analysis/train_geo.csv")
 
 
 # Variable selection procedure 

@@ -201,7 +201,6 @@ trainIndex <- createDataPartition(data_geo$claimAm, p = 0.8, list = FALSE, times
 train_geo <- data_geo[trainIndex, ]
 test_geo <- data_geo[-trainIndex, ]
 
-# save new dataset
-write.csv(train_geo, file = "Severity_Analysis/train_geo.csv")
+
 
 
