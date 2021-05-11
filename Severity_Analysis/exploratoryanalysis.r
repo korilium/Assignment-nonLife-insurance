@@ -89,10 +89,10 @@ theme_bw()
 train_nozero %>% plot_bar()
 train_nozero %>% plot_histogram()
 
-
-Data_group <- splitmix(train_nozero)
-Data_quanti <- train_nozero[Data_group$col.quant]
-Data_quali <- train_nozero[Data_group$col.qual]
+train_nozero1 <- train_nozero%>% select(-logclaimAm)
+Data_group <- splitmix(train_nozero1)
+Data_quanti <- train_nozero1[Data_group$col.quant]
+Data_quali <- train_nozero1[Data_group$col.qual]
 
 tree <- hclustvar(X.quanti = Data_quanti, X.quali = Data_quali)
 plot(tree)
