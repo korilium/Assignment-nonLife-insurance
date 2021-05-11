@@ -9,9 +9,11 @@ output:
 fontsize: 12pt
 geometry: margin = 1in
 bibliography: bibliography.bib
+date: "11/05/2021"
 ---
 
-
+\tableofcontents
+\pagebreak
 
 # Introduction
 
@@ -24,11 +26,7 @@ bibliography: bibliography.bib
 we started the exploratory analysis on the severity by looking at the density of logarithmic claim amounts(See Figure \ref{density.png}). From the density we can clearly see that the data is not following any well-behaved distribution and we thus opted for using the gamma distributions as this distribution is more versatile than the log-normal. From the graph we can also deduct that there are a lot of outliers, which is expected for claim amounts as they tend to deviate from the mean. Next, the mean, variance, skewness and kurtosis are 1866.57, 19338.67, 78.84, 7701.894 respectively. This also indicated a lot of deviation on the positive side and frequent outliers as the kurtosis is substantial. This result also emphasize the conclusion we made from the graph. The following figure is a representation of the relative claim amounts per county where we subdivide the claim amounts per county according to the following quantiles: 0.2, 0.8 , 0.9, 0.95 and 0.99 .  From the map of Belgium we can say that most of the claim amounts occur in the cities like Brussels, Antwerp and Liege. Although, there are some counties where the claim amount is also a sizable amount, for example in the Hainaut Province. This probably indicates that some outliers might be located in these regions. 
 
 
-![](Severity_Analysis/plots/exploratory/density.png "Density of claim amounts"){width=40%}
-
-
-
-
+![](Severity_Analysis/plots/exploratory/density.png "Density of claim amounts"){width=50%}
 ![](Severity_Analysis/plots/exploratory/county.png "claim amount per county"){width=50%}
 
 
@@ -38,7 +36,7 @@ Now that the claim amounts have been plotted according to the postal codes, we c
 ![](Severity_Analysis/plots/exploratory/barplots.png "effect of factor variables on claim amount"){width=100%}
 
 Now that we have looked at the 
-following the paper of `@chavent2011clustofvar` results in @chavent2011clustofvar
+following the paper of @chavent2011clustofvar
 
 ![](Severity_Analysis/plots/exploratory/dendogram.png "Principle Component Analysis for homogeneity between variables "){width=75%}
 
