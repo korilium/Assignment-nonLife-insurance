@@ -167,6 +167,8 @@ ncol=4, top = textGrob("Partial Dependency Plots",gp=gpar(fontsize=17,font=3)))
 
 plot(gbm_0, 2, n.trees_opt, type = "response", main = textGrob("Partial Dependency Plot - geo",gp=gpar(fontsize=17,font=3)))
 
+summary(gbm_perf)
+
 gbm_perf <- gbm(freq ~ offset(log(expo)) + ageph + geo + agecar + sexph + fuel 
              + split + use + fleet + sportc + cover + power,
              data = gbm_train,
