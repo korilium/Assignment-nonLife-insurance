@@ -16,6 +16,9 @@ library(evtree)
 library(glmulti)
 library(distRforest)
 
+hgd()
+hgd_browse()
+
 ### loading in data and setting up names and types###
 toledo <- read.csv("toledo files//Assignment.csv", ",", header = T)
 Mdata <- read.csv("data.csv", ",", header = T)
@@ -56,7 +59,7 @@ dim(data_nozero)
 ################# binning age and spatial  ####################################
 
 
-gam_spatial <- gam(claimAm ~ s(LONG, LAT, bs = "tp"), family = Gamma(link = "log"), data = data_nozero)
+gam_spatial <- gam(claimAm ~ s(long, lat, bs = "tp"), family = Gamma(link = "log"), data = data_nozero)
 
 
 
@@ -105,12 +108,12 @@ for (j in 2:15) {
   ))
 
   AIC_comp[j] <- gam(claimAm ~ s(ageph) + geo + power + cover + fleet + split +
-    fuel + sexph + agecar,
+    fuel + sexph + agecar + use + sportc,
   method = "REML", data = data_geo,
   family = Gamma(link = "log")
   )$aic
   BIC_comp[j] <- BIC(gam(claimAm ~ s(ageph) + geo + power + cover + fleet + split +
-    fuel + sexph + agecar,
+    fuel + sexph + agecar + use + sportc,
   method = "REML", data = data_geo,
   family = Gamma(link = "log")
   ))

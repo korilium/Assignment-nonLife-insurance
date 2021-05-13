@@ -73,9 +73,9 @@ belgium_shape_sf$claimAm <- belgium_shape_sf$tot_claimAm/belgium_shape_sf$Shape_
 
 belgium_shape_sf$claimAm_class <- cut(belgium_shape_sf$claimAm,
                                    breaks = quantile(belgium_shape_sf$claimAm,
-                                   c(0.2, 0.8,0.9,0.95,0.99, 1), na.rm = TRUE),
+                                   c(0.2,0.5,0.8,0.9,0.95,0.99, 1), na.rm = TRUE),
                                    right = FALSE, include.lowest = TRUE,
-                                   labels = c("0.2","0.8", "0.9", "0.95", "0.99"))
+                                   labels = c("0.2","0.5","0.8", "0.9", "0.95", "0.99"))
 
 ggplot(belgium_shape_sf) +
 geom_sf(aes(fill = claimAm_class), colour = "black", size = 0.1) +
