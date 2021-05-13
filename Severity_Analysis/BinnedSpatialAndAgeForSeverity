@@ -1,3 +1,20 @@
+# libraries 
+library(ggplot2)
+library(dplyr)
+library(httpgd)
+library(sf)
+library(moments)
+library(mgcv)
+library(caTools)
+library(caret)
+library(tmap)
+library(rbin)
+library(data.table)
+library(readxl)
+library(classInt)
+library(evtree)
+library(glmulti)
+library(distRforest)
 
 ### loading in data and setting up names and types###
 toledo <- read.csv("toledo files//Assignment.csv", ",", header = T)
@@ -201,7 +218,6 @@ trainIndex <- createDataPartition(data_geo$claimAm, p = 0.8, list = FALSE, times
 train_geo <- data_geo[trainIndex, ]
 test_geo <- data_geo[-trainIndex, ]
 
-# save new dataset
-write.csv(train_geo, file = "Severity_Analysis/train_geo.csv")
+
 
 

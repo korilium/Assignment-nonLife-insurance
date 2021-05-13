@@ -20,13 +20,13 @@ class(belgium_shape_sf)
 
 # factorize 
 Data <- as.data.frame(data)
-train <- Data %>% select(-X, -LONG.x, -LAT.x, -LAT.y,- LONG.y) %>%
- mutate(across(c(claimAm, fit_spatial,  ageph, freq_ann), as.numeric)) %>%
- mutate(across(c(agecar, sexph, power, split, fuel, use, fleet, sportc, cover, group_ageph, geo), as.factor))
+train <- Data %>% select(-X, -long, -lat) %>%
+ mutate(across(c(claimAm,  ageph), as.numeric)) %>%
+ mutate(across(c(agecar, sexph, power, split, fuel, use, fleet, sportc, cover, agephGR, geo), as.factor))
 
 #take elements with claimam and create logclaimam variable 
 train_nozero <- subset(train, Data$claimAm != 0)
-
+train_nozero$logclaimAm <- log(train_nozero$claimAm)
 
 
 
@@ -39,22 +39,28 @@ ggplot(train_nozero, aes(x = claimAm)) +
 geom_density() +
 scale_x_continuous(trans = 'log2') +
 geom_histogram(aes(y = ..density..), bins = 20,fill = "#116e8a", color = "white", alpha = 0.7) +
-geom_rug()
+geom_rug()+
+labs(x ="log of claim amount")
+
+mean(train_nozero$claimAm)
+sd(train_nozero$claimAm)
+kurtosis(train_nozero$claimAm)
+skewness(train_nozero$claimAm)
 
 plot <- list()
 
 for (i in colnames(train_nozero)) {
   plot[[i]] <- ggplot(data = train_nozero, mapping = aes_string(x = i, y = "logclaimAm")) +
-  geom_jitter(aes(color = 'red'), alpha = 0.2) +
-  geom_boxplot(, fill = "#116e8a", color = "black", alpha = 0.3) +
+  geom_jitter(col = '#116e8a', alpha = 0.2) +
+  geom_boxplot(, fill = "#05039e", color = "black", alpha = 0.3) +
     labs(x = i) +
   guides(color = FALSE) +
   theme_minimal()
 }
 
-grid.arrange(plot[[17]], plot[[9]], plot[[4]],
-            plot[[5]], plot[[6]], plot[[7]],
-            plot[[8]], plot[[10]], plot[[11]], plot[[12]], ncol = 3)
+grid.arrange(plot[[4]],plot[[5]], plot[[6]], plot[[7]],
+            plot[[8]],plot[[9]], plot[[10]], plot[[11]],
+             plot[[12]],plot[[14]], ncol = 3)
 
 
 #map of balgium 
@@ -67,14 +73,14 @@ belgium_shape_sf$claimAm <- belgium_shape_sf$tot_claimAm/belgium_shape_sf$Shape_
 
 belgium_shape_sf$claimAm_class <- cut(belgium_shape_sf$claimAm,
                                    breaks = quantile(belgium_shape_sf$claimAm,
-                                   c(0, 0.2, 0.8,0.9,0.95,0.99, 1), na.rm = TRUE),
+                                   c(0.2, 0.8,0.9,0.95,0.99, 1), na.rm = TRUE),
                                    right = FALSE, include.lowest = TRUE,
-                                   labels = c("low", "0.2","0.8", "0.9", "0.95", "0.99"))
+                                   labels = c("0.2","0.8", "0.9", "0.95", "0.99"))
 
 ggplot(belgium_shape_sf) +
 geom_sf(aes(fill = claimAm_class), colour = "black", size = 0.1) +
-ggtitle("MTPLclaimamountcydata") +
-labs(fill = "Relative\nclaimamount") +
+ggtitle("claim amount per county") +
+labs(fill = "relative claim amount") +
 scale_fill_brewer(palette = "Blues", na.value = "white") +
 theme_bw()
 
@@ -83,10 +89,10 @@ theme_bw()
 train_nozero %>% plot_bar()
 train_nozero %>% plot_histogram()
 
-
-Data_group <- splitmix(train_nozero)
-Data_quanti <- train_nozero[Data_group$col.quant]
-Data_quali <- train_nozero[Data_group$col.qual]
+train_nozero1 <- train_nozero%>% select(-logclaimAm)
+Data_group <- splitmix(train_nozero1)
+Data_quanti <- train_nozero1[Data_group$col.quant]
+Data_quali <- train_nozero1[Data_group$col.qual]
 
 tree <- hclustvar(X.quanti = Data_quanti, X.quali = Data_quali)
 plot(tree)

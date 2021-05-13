@@ -417,6 +417,7 @@ getGAMdata_single = function(model, term, var, varname){
   return(GAM_data)
 }
 
+view(gam_ageph)
 gam_ageph <- getGAMdata_single(freq_gam_opt_geo, "s(ageph)", data_train$ageph, "ageph")
 ctrl.freq <- evtree.control(alpha = 100, maxdepth = 5, 
                             minbucket = 0.05*nrow(data_train), 

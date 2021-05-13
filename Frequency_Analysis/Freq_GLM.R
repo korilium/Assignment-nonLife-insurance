@@ -36,8 +36,11 @@ Data_quali_new <- model_train[Data_group$col.qual]
 tree <- hclustvar(X.quanti = Data_quanti_new, X.quali = Data_quali_new)
 g_dendogram <- plot(tree)
 
-tot_degr_free <- 4*2*2*4*2*2*2*3*3*11*11
-  
+plot(Data$split~Data$agephGR, main = "Relation agephGR - split")
+plot(Data$sportc~Data$power, main = "Relation sportc - power")
+plot(Data$agecar~Data$cover, main = "Relation agecar - cover")
+plot(Data$use~Data$fleet, main = "Relation use - fleet")
+
   
 # #### JUST SOME TESTING
 # # without interactions
@@ -250,6 +253,8 @@ GLM_comp[,3] <- (GLM_comp[,1] - GLM_comp[,2])^2
 
 MSE_GLM_test <- sum(GLM_comp[,3])/length(GLM_comp[,3])
 MSE_GLM_test   # 0.131994852894684
+
+
 
 
 

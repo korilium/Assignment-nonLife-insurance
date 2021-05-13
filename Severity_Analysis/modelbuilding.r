@@ -40,14 +40,17 @@ Data <- data %>%
 
 
 # remove elements with no claimamount
-data0 <- subset(Data, Data$claimAm != 0)
+data0 <- subset(Data, Data$claimAm > 1)
 
 train_index <- unlist(read.csv("Frequency_Analysis/trainIndex.csv", ",", header = T))
 
 
 train_geo <- data0[train_index, ]
+train_geo <- train_geo[complete.cases(train_geo),]
 test_geo <- data0[train_index, ]
 
+# save new dataset
+write.csv(train_geo, file = "Severity_Analysis/train_geo.csv")
 
 
 # Variable selection procedure 
@@ -71,13 +74,24 @@ GammaBIC <- function(fit) {
 }
 
 # aic selection
-model_selection_aic <- glmulti(claimAm ~ group_ageph + agecar +
-  sexph + fuel + split + use + fleet + 
-  sportc + cover + power + geo + agecar * cover +
-  use * fleet +  sexph * fleet + sportc * power +
-  group_ageph * split, data = train_geo, family = Gamma(link ="log"), bunch = 50, 
-  crit = GammaAIC, method = "h"
-)
+
+model_selection_aic <- glmulti(claimAm ~agecar + sexph 
++ fuel + split + use + fleet + sportc + cover + power + geo +agephGR+
+ sportc:power + use:fleet + split:agephGR + split:geo + sexph:fuel +agecar:cover, data = train_geo, 
+ name="aic",  crit = GammaAIC, family = Gamma("log"),  method = "h",
+  fitfunction = glm, level =2,  marginality = TRUE, report = TRUE,  
+  includeobjects=FALSE, confsetsize = 100,   popsize = 100, mutrate = 0.05,
+   sexrate = 0.3, imm=0.5 , deltaM = 1, conseq =  2)
+
+model_selection_bic <- glmulti(claimAm ~agecar + sexph 
++ fuel + split + use + fleet + sportc + cover + power + geo +agephGR+
+ sportc:power + use:fleet + split:agephGR + split:geo + sexph:fuel +agecar:cover, 
+data = train_geo, name="bic", crit = GammaBIC, family = Gamma("log"),
+  method = "h", fitfunction = glm, level =2,  marginality = TRUE, report = TRUE,
+  includeobjects=FALSE, confsetsize = 20, popsize = 50, mutrate = 0.05, sexrate = 0.3, imm=0.5 , deltaM = 1, conseq = 2 )
+
+
+
 
 
 plot(model_selection_aic, type="p")
@@ -107,15 +121,7 @@ pred_glm <- predict(opt_model, newdata=test_geo, type= "response")
 
 #see fit 
 
-diff <- test_geo$claimAm - pred_glm
-tot_diff <- sum(test_geo$claimAm) - sum(pred_glm)
-
-x <- seq(1:length(pred_glm))
-df_pred <- as.data.frame(cbind(x, pred_glm, test_geo$claimAm, diff))
-
-
-ggplot(df_pred, aes(x = x))+
-geom_line(aes(y = diff))
+diff_glm <- sqrt(sum((test_geo$claimAm - pred_glm)^2)/length(pred_glm))
 
 
 ##### random forest ###
@@ -128,6 +134,8 @@ forest <- rforest(claimAm ~ ageph + agecar +
 
 
 pred <- predict.rforest(forest,test_geo)
+
+diff_forest <- sqrt(sum((test_geo$claimAm - pred)^2)/length(pred))
 
 oob_df <- data.frame('iteration' = seq_len(length(forest[['oob_error']])),
                      'oob_error' = forest[['oob_error']])
