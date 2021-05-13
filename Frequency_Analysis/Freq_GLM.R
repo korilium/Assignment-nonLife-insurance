@@ -17,7 +17,8 @@ names(model_train)
   # "expo"    "freq"    "agecar"  "sexph"   "fuel"    "split"   "use"     "fleet"  
   # "sportc"  "cover"   "power"   "geo"     "agephGR"
 
-### Making a new dendogram 
+### Making a new dendogram (with new binned variables)
+# based on this Dendogram, possible intercationterms will be considered 
 library(ClustOfVar)
 library(PCAmixdata)
 
@@ -33,29 +34,14 @@ Data_group_new <- splitmix(Q)
 Data_quanti_new <- model_train[Data_group$col.quant]
 Data_quali_new <- model_train[Data_group$col.qual]
 
-tree <- hclustvar(X.quanti = Data_quanti_new, X.quali = Data_quali_new)
-g_dendogram <- plot(tree)
+tree2 <- hclustvar(X.quanti = Data_quanti_new, X.quali = Data_quali_new)
+g_dendogram2 <- plot(tree2)
 
+# Graphical representation of interactions
 plot(Data$split~Data$agephGR, main = "Relation agephGR - split")
 plot(Data$sportc~Data$power, main = "Relation sportc - power")
 plot(Data$agecar~Data$cover, main = "Relation agecar - cover")
 plot(Data$use~Data$fleet, main = "Relation use - fleet")
-
-  
-# #### JUST SOME TESTING
-# # without interactions
-# summary(glm(freq ~ agephGR + geo + power + cover + sportc + fleet + use + split + fuel + sexph + agecar,
-#     data = model_train, family = poisson, offset = log(expo)))
-# 
-# # with interaction (based on Dendogram)
-# summary(glm(freq ~ agephGR + geo + power + cover + sportc + fleet + use + split + fuel + sexph + agecar
-#             + agephGR:split + sportc:power + agecar:cover + use:fleet,
-#             data = model_train, family = poisson, offset = log(expo)))
-# 
-# 
-# # only intercept 
-# glm(freq ~ 1, data = model_train, family = poisson, offset = log(expo))
-
 
 ### theory 
 # DELTA deviance < cv → validate null hypothesis, do NOT add extra covariate
@@ -63,6 +49,12 @@ plot(Data$use~Data$fleet, main = "Relation use - fleet")
 
 vars <- c('agephGR', 'geo', 'power', 'cover', 'sportc', 'fleet', 'use', 'split', 'fuel', 'sexph', 
           'agecar', 'agephGR:split', 'sportc:power', 'agecar:cover', 'use:fleet')
+
+
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### Finding the optimal GLM (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+# NOTE: See the added Excel-file for an overview of models and evolution to glm_opt
 
 glm0 <- glm(freq ~ 1, data = model_train, family = poisson, offset = log(expo))
 
@@ -220,19 +212,20 @@ anova(glm7.5, glm8.6, test = "Chisq")
 anova(glm7.5, glm8.7, test = "Chisq") # (!)
 anova(glm7.5, glm8.8, test = "Chisq")
 
-
-glm_opt <- glm8.7
-
-
-summary(glm_opt)
-anova(glm0, glm_opt, test = "Chisq") # ***, p-value: < 2.2e-16
+glm_opt <- glm8.7 # glm8.7 is the best performing GLM
 
 ### Results are summarized in the added Excel-file for convenience sake 
-# Model summary
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### Model Summary (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+summary(glm_opt)
 summ(glm_opt)
+anova(glm0, glm_opt, test = "Chisq") # ***, p-value: < 2.2e-16
 
 
-### Trying to predict the number of claims of the training set 
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### Predict based on training-data (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
 pred_GLM_train <- predict.glm(glm_opt, model_train, type = "response")
 pred_GLM_train
 
@@ -241,6 +234,7 @@ GLM_comp_train[,3] <- (GLM_comp_train[,1] - GLM_comp_train[,2])^2
 
 MSE_GLM_train <- sum(GLM_comp_train[,3])/length(GLM_comp_train[,3])
 MSE_GLM_train   # 0.133131659333354
+
 
 ### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
 ### Predict based on test-data (Frequency)

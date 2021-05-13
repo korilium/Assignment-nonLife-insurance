@@ -2,12 +2,12 @@
 ### Gradient Boosting Machine (Frequency)
 ### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
   # For GBMs it is easier to use continuous features, so age will be looked at
-  # in it continuous for in stead of the made factors 
+  # in it continuous form in stead of the made factor variable
 
 library(gbm)
 
 ### Preparing dataset 
-Data_gbm <- Data[,c(1, 3:13, 16)]
+Data_gbm <- Data[,c(1, 3:13, 16)] # Dropping unnecessary variables 
 names(Data_gbm)
 str(Data_gbm)
 dim(Data_gbm)[1] == dim(Data)[1] # Same number of observations 
@@ -19,10 +19,13 @@ head(gbm_train)
 names(gbm_train)
 
 
-### First, full GBM-model 
-set.seed(1729)  # Needed because you work with random draws 
-gbm_0 <- gbm(freq ~ offset(log(expo)) + ageph + geo + agecar + sexph + fuel # mind the offset for exposure !! 
-             + split + use + fleet + sportc + cover + power,
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### First, full GBM-model (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+
+set.seed(1729)  # Needed because you work with random draws (bag.fraction)
+gbm_0 <- gbm(freq ~ offset(log(expo)) + ageph + geo + agecar + sexph + fuel 
+             + split + use + fleet + sportc + cover + power, # mind the offset for exposure !! 
              data = gbm_train,
              distribution = "poisson",
              n.trees = 1000,          # First try 500 -> insufficient, then 1000 -> insufficient for cv, then 1500 or 2000
@@ -37,16 +40,22 @@ gbm_0 <- gbm(freq ~ offset(log(expo)) + ageph + geo + agecar + sexph + fuel # mi
              n.minobsinnode = 10000)  # minimum number of observations in the terminal nodes of the trees
 
 # Tuning parameters: n.trees (T) and interaction.depth (d)
-# Hyper Parameters: shrinkage (lambda = 0.01), bag.fraction (delta = 0.75) -> Values based on paper of Roel
+# Hyper Parameters: shrinkage (lambda = 0.01), bag.fraction (delta = 0.75) -> Values based on paper of Roel Henckaerts 
 
-gbm_0   # There were 11 predictors of which 8 had non-zero influence.
-summary(gbm_0) # use, fleet, sportc do not have a non-zero influence, possibly because there are few observations of the 'other' case
-    # ageph, split and geo are the most important ! 
+gbm_0   
+summary(gbm_0) 
+  # There were 11 predictors of which 8 had non-zero influence.    
+  # use, fleet, sportc do not have a non-zero influence, possibly because there are few observations of the 'other' case
+  # ageph, split and geo are the most important ! 
 
 plot(gbm_0$train.error, type = "l", main = "Training error per iteration",
      xlab = "Number of trees")
 
-### Looking for best hyperparameters (max n.tree and cv.folds)
+
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### Looking for best values for n.tree, interaction.depth and cv.folds (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+# Note: these values were altered manually, results were summarized in the added Excel-file (tab 2)
 
 gbm_0$train.error[gbm_0$n.trees]
 # interaction.depth = 2
@@ -134,56 +143,66 @@ gbm_best_i_cv
   # n.tree = 1500 -> 1500
   # n.tree = 2000 -> 1960
 
-# use max n.trees = 1000, with optimal n.trees = 681 and 5fold cv
+# gbm0 -> use max n.trees = 1000, with optimal n.trees = 681 and 5fold cv and interaction.depth = 2
 
 n.trees_opt <- 681    # interaction.depth = 2, n.trees = 1000, CV = 5
 
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### Optimized GBM (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+gbm_perf <- gbm(freq ~ offset(log(expo)) + ageph + geo + agecar + sexph + fuel 
+                + split + use + fleet + sportc + cover + power,
+                data = gbm_train,
+                distribution = "poisson",
+                n.trees = n.trees_opt,   # Use optimal number of trees
+                interaction.depth = 2,   # Use optimal interaction depth
+                shrinkage = 0.01,        
+                bag.fraction = 0.75,     
+                cv.folds = 5,            # Use 5-fold, this is sufficient, 10 only has a marginal increase
+                verbose = F,             
+                keep.data = T,
+                train.fraction = 1,      
+                n.cores = 1,             
+                n.minobsinnode = 10000)  
 
-##### Partial Dependence Plots (PDP)
-plot(gbm_0, 1, n.trees_opt)
-plot(gbm_0, 2, n.trees_opt) + theme(axis.text.x = element_text(angle = 60, hjust = 1))
-plot(gbm_0, 3, n.trees_opt)
-plot(gbm_0, 4, n.trees_opt)
-plot(gbm_0, 5, n.trees_opt)
-plot(gbm_0, 6, n.trees_opt)
-plot(gbm_0, 7, n.trees_opt)  # Barely any difference, insignificant USE
-plot(gbm_0, 8, n.trees_opt)  # Barely any difference, insignificant FLEET
-plot(gbm_0, 9, n.trees_opt)  # Barely any difference, insignificant SPORTC
-plot(gbm_0, 10, n.trees_opt)
-plot(gbm_0, 11, n.trees_opt)
+summary(gbm_perf)
+
+
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### Partial Dependence Plots (PDP) (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+plot(gbm_perf, 1, n.trees_opt)
+plot(gbm_perf, 2, n.trees_opt) 
+plot(gbm_perf, 3, n.trees_opt)
+plot(gbm_perf, 4, n.trees_opt)
+plot(gbm_perf, 5, n.trees_opt)
+plot(gbm_perf, 6, n.trees_opt)
+plot(gbm_perf, 7, n.trees_opt)  # Barely any difference, insignificant USE
+plot(gbm_perf, 8, n.trees_opt)  # Barely any difference, insignificant FLEET
+plot(gbm_perf, 9, n.trees_opt)  # Barely any difference, insignificant SPORTC
+plot(gbm_perf, 10, n.trees_opt)
+plot(gbm_perf, 11, n.trees_opt)
 
 grid.arrange(
-plot(gbm_0, 1, n.trees_opt, type = "response"),
-plot(gbm_0, 3, n.trees_opt, type = "response"),
-plot(gbm_0, 4, n.trees_opt, type = "response"),
-plot(gbm_0, 5, n.trees_opt, type = "response"),
-plot(gbm_0, 6, n.trees_opt, type = "response"),
-plot(gbm_0, 7, n.trees_opt, type = "response"),  # Barely any difference, insignificant USE
-plot(gbm_0, 8, n.trees_opt, type = "response"),  # Barely any difference, insignificant FLEET
-plot(gbm_0, 9, n.trees_opt, type = "response"),  # Barely any difference, insignificant SPORTC
-plot(gbm_0, 10, n.trees_opt, type = "response"),
-plot(gbm_0, 11, n.trees_opt, type = "response"), 
+plot(gbm_perf, 1, n.trees_opt, type = "response"),
+plot(gbm_perf, 3, n.trees_opt, type = "response"),
+plot(gbm_perf, 4, n.trees_opt, type = "response"),
+plot(gbm_perf, 5, n.trees_opt, type = "response"),
+plot(gbm_perf, 6, n.trees_opt, type = "response"),
+plot(gbm_perf, 7, n.trees_opt, type = "response"),  # Barely any difference, insignificant USE
+plot(gbm_perf, 8, n.trees_opt, type = "response"),  # Barely any difference, insignificant FLEET
+plot(gbm_perf, 9, n.trees_opt, type = "response"),  # Barely any difference, insignificant SPORTC
+plot(gbm_perf, 10, n.trees_opt, type = "response"),
+plot(gbm_perf, 11, n.trees_opt, type = "response"), 
 ncol=4, top = textGrob("Partial Dependency Plots",gp=gpar(fontsize=17,font=3)))
 
 plot(gbm_0, 2, n.trees_opt, type = "response", main = textGrob("Partial Dependency Plot - geo",gp=gpar(fontsize=17,font=3)))
 
-summary(gbm_perf)
 
-gbm_perf <- gbm(freq ~ offset(log(expo)) + ageph + geo + agecar + sexph + fuel 
-             + split + use + fleet + sportc + cover + power,
-             data = gbm_train,
-             distribution = "poisson",
-             n.trees = n.trees_opt,   # Use optimal number of trees
-             interaction.depth = 2,   # Use optimal interaction depth
-             shrinkage = 0.01,        
-             bag.fraction = 0.75,     
-             cv.folds = 5,            # Use 5-fold, this is sufficient, 10 only has a marginal increase
-             verbose = F,             
-             keep.data = T,
-             train.fraction = 1,      
-             n.cores = 1,             
-             n.minobsinnode = 10000)  
 
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### Predict based on training-data (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
 pred_GBM_train <- predict(gbm_perf, gbm_train, type = "response")*gbm_train$expo
 
 GBM_comp_train <- as.data.frame(cbind(gbm_train$freq,pred_GBM_train))
