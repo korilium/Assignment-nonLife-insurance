@@ -480,6 +480,14 @@ model_test <- FINALDF[-trainIndex,]
 total_train <- Data[trainIndex,]
 total_test <- Data[-trainIndex,]
 
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### Adding predictions to total Dataframe (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+pred_GLM_full <- predict.glm(glm_opt, Data, type = "response")
+pred_GLM_full
+
+Data <- cbind(Data,pred_GLM_full)
+
 write.csv(total_train,"/Users/MathijsGerits/Documents/School/Semester 2/Datascience for non-life insurance/AA_ASSIGNMENT/Assignment-nonLife-insurance\\total_train.csv", row.names = FALSE)
 write.csv(total_test,"/Users/MathijsGerits/Documents/School/Semester 2/Datascience for non-life insurance/AA_ASSIGNMENT/Assignment-nonLife-insurance\\total_test.csv", row.names = FALSE)
 write.csv(trainIndex,"/Users/MathijsGerits/Documents/School/Semester 2/Datascience for non-life insurance/AA_ASSIGNMENT/Assignment-nonLife-insurance\\trainIndex.csv", row.names = FALSE)
