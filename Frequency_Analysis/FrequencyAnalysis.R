@@ -24,15 +24,17 @@ library(jtools)
 KUL <- "#116E8A"
 
 
-# Making the data ready 
-# Data$chargtot <- NULL   # This analysis will only focus on frequency data
-# Data[,15] <- ordered(Data[,15], levels = c("<66","66-110",">110"))
-# colnames(Data) <- c("ageph","postal","expo","lnexpo","freq","freq_ann","agecar","sexph","fuel",
-#                     "split","use","fleet","sportc","cover","power")
-
-# Removing unnecessary variables 
+# Importing and making the data ready 
+Data <- read.csv(file.choose())
+Data$X <- NULL
+Data$chargtot <- NULL   # This part of the analysis will only focus on frequency data
 Data$lnexpo <- NULL
 Data$freq_ann <- NULL
+Data$agecar <- ordered(Data$agecar, levels = c("0-1","2-5","6-10",">10"))
+Data$split <- ordered(Data$split, levels = c("Once","Twice","Thrice","Monthly"))
+Data$power <- ordered(Data$power, levels = c("<66","66-110",">110"))
+colnames(Data) <- c("ageph","postal","expo","lnexpo","freq","freq_ann","agecar","sexph","fuel",
+                     "split","use","fleet","sportc","cover","power")
 
 # Getting a feel for the data
 str(Data)
@@ -40,13 +42,27 @@ names(Data)
 head(Data)
 summary(Data)
 
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### Making train indices for data_train and model_train (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+# Split data into train and test subsets 
+set.seed(1729)
+trainIndex <- createDataPartition(Data$freq, times = 1, p = 0.8, list = FALSE, group = 10)
+
+data_train <- Data[trainIndex,]
+data_test <- Data[-trainIndex,]
+
+# data_train is used to calibrate and bin the continuous variables, later
+# model_train will be made with the same indices, but with binned variables 
+
 str(data_train)
 names(data_train)
 head(data_train)
 summary(data_train)
 
-
-# Plot relative frequency of variates
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### Plot relative frequency of covariates (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
 g_freq <- ggplot(data_train, aes(freq))+
   geom_bar(aes(y = (..count..)/sum(..count..)), fill = KUL, col = KUL, alpha = 0.7)+
   ggtitle("Relative Frequency - Number of claims")+
@@ -134,7 +150,7 @@ data_train %>% group_by(fleet) %>% summarize(tot_freq = sum(freq), tot_expo = su
 data_train %>% group_by(sportc) %>% summarize(tot_freq = sum(freq), tot_expo = sum(expo), emp_freq = sum(freq) / sum(expo))
 data_train %>% group_by(cover) %>% summarize(tot_freq = sum(freq), tot_expo = sum(expo), emp_freq = sum(freq) / sum(expo))
 data_train %>% group_by(power) %>% summarize(tot_freq = sum(freq), tot_expo = sum(expo), emp_freq = sum(freq) / sum(expo))
-# By comparing Data and data_train, we can see whether the training data is a good sample for the full dataset
+# By comparing Data and data_train, we can see whether the training data is a good representation of the full dataset
 
 
 # Frequency variable - descriptives 
@@ -149,55 +165,44 @@ freq_emp_mean_train    # 0.1397242
 
 freq_emp_var           # 0.1516978
 freq_emp_var_train     # 0.1520487
-  # GOOD SAMPLE, first two moments are comparable 
+  # GOOD REPRESENTATION, first two moments and empirical frequencies are comparable 
 
 
-## Representing spatial data
-
-# shape_Belgium <-st_read(file.choose(), quiet = TRUE)
-# shape_Belgium<-st_transform(shape_Belgium, "+proj=longlat +datum=WGS84")
-# 
-# post_expo <- Data %>% group_by(postal) %>% summarize(num = n(), total_expo = sum(expo))
-# shape_Belgium <- left_join(shape_Belgium, post_expo, by = c("POSTCODE" = "postal"))
-# shape_Belgium$freq_area <- shape_Belgium$total_expo/shape_Belgium$Shape_Area
-# shape_Belgium$freq_class <- cut(shape_Belgium$freq_area,
-#                           breaks = quantile(shape_Belgium$freq_area, c(0,0.2,0.8,1), na.rm = TRUE),
-#                           right = FALSE, include.lowest = TRUE,
-#                           labels = c("low", "average", "high"))
-# 
-# g_shapefile <- ggplot(shape_Belgium) + 
-#   geom_sf(aes(fill = freq_class), colour = KUL, size = 0.1) +
-#   ggtitle("Claim frequency data") +
-#   labs(fill = "Relative\nexposure") +
-#   scale_fill_brewer(palette = "Reds", na.value = "white")
-
-g_shapefile
-
-# Checking relations / dependencies between covariates
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### Checking relations / dependencies between covariates with Dendogram (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
 library(ClustOfVar)
 library(PCAmixdata)
 
-Data_group <- splitmix(Q)   # Q = Data, but without ordered factors, splitmix() does not work with ordered factors  
+Data_group <- splitmix(P)   # P = Data, but without ordered factors, splitmix() does not work with ordered factors  
 Data_quanti <- Data[Data_group$col.quant]
 Data_quali <- Data[Data_group$col.qual]
 
-tree <- hclustvar(X.quanti = Data_quanti, X.quali = Data_quali)
-g_dendogram <- plot(tree)
+tree1 <- hclustvar(X.quanti = Data_quanti, X.quali = Data_quali)
+g_dendogram1 <- plot(tree1)
 
 
 ### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
-### Making train indices for data_train and model_train (Frequency)
+### Representing spatial data (Frequency)
 ### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
-# Split data into train and test subsets 
+shape_Belgium <-st_read(file.choose(), quiet = TRUE)
+shape_Belgium<-st_transform(shape_Belgium, "+proj=longlat +datum=WGS84")
 
-set.seed(1729)
-trainIndex <- createDataPartition(Data$freq, times = 1, p = 0.8, list = FALSE, group = 10)
+post_expo <- Data %>% group_by(postal) %>% summarize(num = n(), total_expo = sum(expo))
+shape_Belgium <- left_join(shape_Belgium, post_expo, by = c("POSTCODE" = "postal"))
+shape_Belgium$freq_area <- shape_Belgium$total_expo/shape_Belgium$Shape_Area
+shape_Belgium$freq_class <- cut(shape_Belgium$freq_area,
+                          breaks = quantile(shape_Belgium$freq_area, c(0,0.2,0.8,1), na.rm = TRUE),
+                          right = FALSE, include.lowest = TRUE,
+                          labels = c("low", "average", "high"))
 
-data_train <- Data[trainIndex,]
-data_test <- Data[-trainIndex,]
+g_shapefile <- ggplot(shape_Belgium) +
+  geom_sf(aes(fill = freq_class), colour = KUL, size = 0.1) +
+  ggtitle("Claim frequency data") +
+  labs(fill = "Relative\nexposure") +
+  scale_fill_brewer(palette = "Reds", na.value = "white")
 
-# data_train is used to calibrate and bin the continuous variables, later
-# model_train will be made with the same indices, but with binned variables 
+g_shapefile
 
 
 ### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
@@ -282,6 +287,7 @@ AIC(gam7) # 101159.8
 # CONCLUSION: choose model with lowest AIC and minimal log-Likelihood -> gam 1-2-4
 
 # SO, we take gam4, because it has the best characteristics on different measurements
+# and it is the simplest model with good performance
 gam_opt <- gam4
 
 post_dt$cover <- Data$cover[1]
@@ -310,7 +316,7 @@ ggplot(shape_Belgium) +
 
 dt_pred <- dplyr::arrange(dt_pred, pc) # order based on numerical value of postal code
 
-# PART 2: actually binning spatial factor in 'geo' in for-loop
+##### PART 3: actually binning spatial factor in 'geo' in for-loop
 AIC_comp <- c()
 BIC_comp <- c()
 breaks <- list()
@@ -349,8 +355,7 @@ BIC_comp == min(BIC_comp, na.rm = T)  # 11
 
 breaks
 
-# PART 3: using the results of the for-loop to adjust dataset 
-
+##### PART 4: using the results of the for-loop to adjust dataset 
 num_bins <- 11 # Based on the lowest BIC value 
 classint_fisher <- classIntervals(dt_pred$spatial_pred_freq, num_bins, style = "fisher")
 
@@ -382,7 +387,7 @@ ggplot(shape_Belgium) + theme_bw() + labs(fill = "Fisher") +  # BLUE
   scale_fill_manual(values = crp3, na.value = "white") +
   theme_bw()
 
-# Adjust initial dataset 
+##### PART 5: Adjust original dataset to incorporate binned spatial variable 
 df_geo$postal <- as.numeric(df_geo$postal)
 df_geo <- Data %>% dplyr::select(freq,ageph,expo,power, cover, fleet, split, fuel, sexph, agecar,postal)
 df_geo <- left_join(df_geo,dt_pred, by = c("postal" = "pc"))
@@ -417,7 +422,6 @@ getGAMdata_single = function(model, term, var, varname){
   return(GAM_data)
 }
 
-view(gam_ageph)
 gam_ageph <- getGAMdata_single(freq_gam_opt_geo, "s(ageph)", data_train$ageph, "ageph")
 ctrl.freq <- evtree.control(alpha = 100, maxdepth = 5, 
                             minbucket = 0.05*nrow(data_train), 
@@ -479,6 +483,14 @@ model_test <- FINALDF[-trainIndex,]
 
 total_train <- Data[trainIndex,]
 total_test <- Data[-trainIndex,]
+
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+### Adding predictions to total Dataframe (Frequency)
+### ---___---___---___---___---___---___---___---___---___---___---___---___---___---
+pred_GLM_full <- predict.glm(glm_opt, Data, type = "response")
+pred_GLM_full
+
+Data <- cbind(Data,pred_GLM_full)
 
 write.csv(total_train,"/Users/MathijsGerits/Documents/School/Semester 2/Datascience for non-life insurance/AA_ASSIGNMENT/Assignment-nonLife-insurance\\total_train.csv", row.names = FALSE)
 write.csv(total_test,"/Users/MathijsGerits/Documents/School/Semester 2/Datascience for non-life insurance/AA_ASSIGNMENT/Assignment-nonLife-insurance\\total_test.csv", row.names = FALSE)

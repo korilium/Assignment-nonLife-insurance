@@ -66,10 +66,17 @@ For Severity the same approach has been adopted as in Frequency.
 
 ### Frequency
 
+To get a feel for the data some basic R functions (str, names, head, summary) are used on the main dataset and the dataset with just the training data. There are no noteworthy findings after running these functions. Only some variables where you may expect another type, like the variables long, lat where you could expect type long instead of chr. This should be kept in mind when using these variables. After inspecting the data, the variables lnexpo and freq_ann are removed from the dataset. They were considered irrelevant, because they could easily be reproduced with other variables in the dataset. 
+
+To obtain a further understanding of the dataset a grid of relative frequency plots is made using the training data. There are some finding thar are relevant for frequency data. Most policies In the dataset have 0 claims and few have 3 or more claims. There aren’t many cars that are that are younger than 1 year. The age of the policy holders is fairly even distributed. Most policies are held by males and have the standard MTPL coverage. Last there aren’t many cars with more than 110 horsepower or are a sportscar, there aren’t many cars that are part of a fleet or have a professional use.
+
+![](Frequency_Analysis/Final documents/Exploratory/Exploratory - relative Frequency.png "Relative frequency")
+
+To make sure the training dataset is a good sample for the full dataset. The empirical frequency of both datasets is compared. The empirical mean and variance for the whole datasets are almost the same. The empirical variance of the individual variables is also compared. From comparing these empirical variances there can be concluded, that the training dataset is a good sample for the actual full dataset.  
+
 ### Severity 
 
 we started the exploratory analysis on the severity by looking at the density of logarithmic claim amounts. From the density we can clearly see that the data is not following any well-behaved distribution and we thus opted for using the gamma distributions as this distribution is more versatile than the log-normal. From the graph we can also deduct that there are a lot of outliers, which is expected for claim amounts as they tend to deviate from the mean. Next, the mean, variance, skewness and kurtosis are 1866.57, 19338.67, 78.84, 7701.894 respectively. This also indicated a lot of deviation on the positive side and frequent outliers as the kurtosis is substantial. This result also emphasize the conclusion we made from the graph. The following figure is a representation of the relative claim amounts per county where we subdivide the claim amounts per county according to the following quantiles: 0.2, 0.8 , 0.9, 0.95 and 0.99 .  From the map of Belgium we can say that most of the claim amounts occur in the cities like Brussels, Antwerp and Liege. Although, there are some counties where the claim amount is also a sizable amount, for example in the Hainaut Province. This probably indicates that some outliers might be located in these regions. 
-
 
 ![](Severity_Analysis/plots/exploratory/density.png "Density of claim amounts"){width=50%}
 ![](Severity_Analysis/plots/exploratory/county.png "claim amount per county"){width=50%}
