@@ -506,9 +506,22 @@ The top down approach for calculating the risk loading parameters, suggested by 
 
 For the calculation of the risk premium the expected value premium principle will be used. This was chosen because it is easy to understand and calculate and often used in actuarial practice  @heras2018application. Before the expected value premium principle can be used the risk loading parameter phi has to be calculated. To calculate phi the earlier mentioned top down approach suggest by Yang will be used. First a predictive distribution of the future losses of the policy will be calculated by using a bootstrap with 2500 repetitions. Yang suggests to use 10000 repetitions this was not possible with the used PC. The bootstrap was run over the pure premium which was calculated in the previous parts. These pure premiums were calculated with a two-part GLM regression. The 99.5% quantile of the predictive distribution of the bootstrap equals 36 214 173. The 99.5% quantile was used, because this is conform the Solvency II regulation @yang2020risk. This 99.5% quantile and the sum of all pure premiums calculated in the previous part can then be used to calculate $\phi$ . 
 
+\begin{figure}[h!]
+  \includegraphics[width=\linewidth]{Rplot02.png}
+  \caption{Histogram: predictive distribution of the future losses}
+  \label{fig:histogram }
+\end{figure}
+
 $$ \phi  = \frac{C – \sum{E(Y_i)}}{\sum{E(Y_i)}} $$
 
 $\phi$ can then be filled in in the expected value premium principle, so that the risk loading and total risk premium can be calculated for each individual policy. 
+
+
+
+# Conclusion 
+
+After thoroughly analysing the data, a model is build to predict the future losses. This model has a frequency and severity part. To model the frequency a GLM and GBM were constructed. Out of the GLM and GBM, the GLM was most suitable to model the frequency. Both the GLM and GBM were an equally good fit, but the GLM was less complex. To model the severity a GLM and Random Forest were used. The GLM preformed better on the trainset than the Random Forest.  Thus the GLM was preferred to model the severity. These GLMs were then used to calculate a pure premium. On this pure premium a risk loading was added.  This risk loading was calculated using the expected value premium principle. A top down approach suggest by Yang was used to calculate the risk loading parameters.  
+
 
 
 
