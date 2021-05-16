@@ -17,6 +17,7 @@ library(classInt)
 library(evtree)
 library(glmulti)
 library(distRforest)
+library(pdp)
 
 # create plot image
 hgd()
@@ -365,73 +366,96 @@ GammaBIC <- function(fit) {
 
 # aic selection
 
-model_selection_aic <- glmulti(claimAm ~ agecar + sexph
-  + fuel + split + use + fleet + sportc + cover + power + geo + agephGR +
-  sportc:power + use:fleet + split:agephGR + split:geo + sexph:fuel + agecar:cover,
+model_selection_aic <- glmulti(claimAm ~ group_ageph + agecar + sexph
+  + fuel + split + use + fleet + sportc + cover + power + geo +
+  sportc:power + use:fleet + split:group_ageph + split:geo + sexph:fuel + agecar:cover,
 data = train_geo,
 name = "aic", crit = GammaAIC, family = Gamma("log"), method = "h",
-fitfunction = glm, level = 2, marginality = TRUE, report = TRUE,
-includeobjects = FALSE, confsetsize = 100, popsize = 100, mutrate = 0.05,
-sexrate = 0.3, imm = 0.5, deltaM = 1, conseq = 2
+fitfunction = glm, level = 2, report = TRUE,
+includeobjects = FALSE, confsetsize = 100, popsize = 100, 
 )
+bestmodel <- model_selection_aic@formulas[1]
+secondbestmodel <- model_selection_aic@formulas[2]
+thirdbestmodel <- model_selection_aic@formulas[3]
+plot(model_selection_aic, type = "p")
+plot(model_selection_aic, type = "w")
+plot(model_selection_aic, type = "s")
 
-model_selection_bic <- glmulti(claimAm ~ agecar + sexph
-  + fuel + split + use + fleet + sportc + cover + power + geo + agephGR +
-  sportc:power + use:fleet + split:agephGR + split:geo + sexph:fuel + agecar:cover,
+# bic selection
+model_selection_bic <- glmulti(claimAm ~ group_ageph + agecar + sexph
+  + fuel + split + use + fleet + sportc + cover + power + geo +
+  sportc:power + use:fleet + split:group_ageph + split:geo + sexph:fuel + agecar:cover,
 data = train_geo, name = "bic", crit = GammaBIC, family = Gamma("log"),
 method = "h", fitfunction = glm, level = 2, marginality = TRUE, report = TRUE,
-includeobjects = FALSE, confsetsize = 20, popsize = 50, mutrate = 0.05, sexrate = 0.3, imm = 0.5, deltaM = 1, conseq = 2
+includeobjects = FALSE, confsetsize = 100, popsize = 100, 
 )
+bestmodel <- model_selection_bic@formulas[1]
+secondbestmodel <- model_selection_bic@formulas[2]
+thirdbestmodel <- model_selection_bic@formulas[3]
+
+plot(model_selection_bic, type = "p")
+plot(model_selection_bic, type = "w")
+plot(model_selection_bic, type = "s")
 
 
 
 
-
-plot(model_selection_aic, type = "p")
 # Best model: claimAm~1+group_ageph+agecar+sexph+fuel+split+use+fleet+cover+power+geo+split:group_ageph+fleet:use+cover:agecar
 
 plot(model_selection_aic, type = "p")
 
-# bic selection
-
-
-model_selection_bic <- glmulti(claimAm ~ group_ageph + agecar +
-  sexph + fuel + split + use
-  + fleet + sportc + cover + power +
-  geo + agecar * cover + use * fleet +
-  sexph * fleet + sportc * power + group_ageph * split,
-data = train_geo, family = Gamma(link = "log"), bunch = 50, crit = GammaBIC, method = "h"
-)
 
 plot(model_selection_bic, type = "p")
 
 # Best model: claimAm~1+group_ageph+agecar+sexph+fuel+split+use+fleet+cover+power+geo+fleet:use+cover:agecar
 
-opt_model <- glm(claimAm ~ 1 + agephGR + agecar + sexph + fuel + split + use + fleet + cover + power + geo + fleet:use + cover:agecar,
+opt_model <- glm(claimAm ~ group_ageph + agecar + sexph + fuel + split + use + fleet + cover + 
+power + geo + fleet:use + cover:agecar + split:group_ageph,
   data = train_geo, family = Gamma(link = "log")
 )
+#predict on train 
 
+pred_glm <- predict(opt_model, newdata = train_geo, type = "response")
+
+diff_glm <- sqrt(sum((train_geo$claimAm - pred_glm)^2) / length(pred_glm))
+
+
+
+
+#predict on test 
 pred_glm <- predict(opt_model, newdata = test_geo, type = "response")
-
-# see fit
 
 diff_glm <- sqrt(sum((test_geo$claimAm - pred_glm)^2) / length(pred_glm))
 
 
 ##### random forest ###
-
+set.seed(666)
 forest <- rforest(claimAm ~ ageph + agecar +
   sexph + fuel + split + use + fleet +
   sportc + cover + power + geo,
 data = train_geo, method = "gamma", ncand = 5,
-ntrees = 500, subsample = 0.8, track_oob = TRUE
-)
+ntrees = 500, track_oob = TRUE, 
+control = rpart.control(minsplit=20, cp = 0, xval = 0, maxdepth = 5, minbucket = 20), 
+subsample= 0.8, red_mem =  TRUE)
+
+forest[['trees']] [[1]]
 
 
+importance <- forest %>% importance_rforest
+importance <- importance[order(importance$importance, decreasing =TRUE),]
+ggplot(importance, aes(x = variable , y = importance))+
+geom_bar(stat = "identity", fill = "#116e8a" )
+
+#predict on train 
+pred <- predict.rforest(forest, train_geo)
+
+diff_forest <- sqrt(sum((train_geo$claimAm - pred)^2) / length(pred))
+#predict on test 
 pred <- predict.rforest(forest, test_geo)
 
 diff_forest <- sqrt(sum((test_geo$claimAm - pred)^2) / length(pred))
 
+#OOB plot 
 oob_df <- data.frame(
   "iteration" = seq_len(length(forest[["oob_error"]])),
   "oob_error" = forest[["oob_error"]]
@@ -440,4 +464,4 @@ ggplot(oob_df, aes(x = iteration, y = oob_error)) +
   geom_point()
 
 
-forest %>% importance_rforest()
+

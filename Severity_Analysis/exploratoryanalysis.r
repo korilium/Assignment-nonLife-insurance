@@ -26,8 +26,7 @@ train <- Data %>% select(-X, -long, -lat) %>%
 
 #take elements with claimam and create logclaimam variable 
 train_nozero <- subset(train, Data$claimAm != 0)
-train_nozero$logclaimAm <- log(train_nozero$claimAm)
-
+train
 
 
 str(train_nozero)
@@ -40,7 +39,7 @@ geom_density() +
 scale_x_continuous(trans = 'log2') +
 geom_histogram(aes(y = ..density..), bins = 20,fill = "#116e8a", color = "white", alpha = 0.7) +
 geom_rug()+
-labs(x ="log of claim amount")
+labs(x ="claim amount")
 
 mean(train_nozero$claimAm)
 sd(train_nozero$claimAm)
@@ -90,9 +89,9 @@ train_nozero %>% plot_bar()
 train_nozero %>% plot_histogram()
 
 train_nozero1 <- train_nozero%>% select(-logclaimAm)
-Data_group <- splitmix(train_nozero1)
-Data_quanti <- train_nozero1[Data_group$col.quant]
-Data_quali <- train_nozero1[Data_group$col.qual]
+Data_group <- splitmix(train_nozero)
+Data_quanti <- train_nozero[Data_group$col.quant]
+Data_quali <- train_nozero[Data_group$col.qual]
 
 tree <- hclustvar(X.quanti = Data_quanti, X.quali = Data_quali)
 plot(tree)
