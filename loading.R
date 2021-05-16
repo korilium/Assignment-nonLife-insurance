@@ -30,10 +30,15 @@ med_pp %>% summarize(l = quantile(stat, 0.005),
 C <- med_pp %>% summarise( u = quantile(stat, 0.995))
 
 phi <- (C - sum_pure_premium)/sum_pure_premium
-
+phi_1 <- 0.003698552
 
 # risk loading and risk premium 
 
-premium$risk_loading <- premium$Pure_premium*0.003698552
+premium$risk_loading <- premium$Pure_premium*phi_1
 premium$risk_premium <- premium$Pure_premium + premium$risk_loading
 
+# plots 
+
+ggplot(med_pp, aes(x = stat)) + geom_histogram(binwidth = 15000)
+
+ggplot(med_pp,) + qqplot()
