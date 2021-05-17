@@ -1,4 +1,4 @@
-
+##### libraries #####
 library(gridExtra)
 library(ggplot2)
 library(dplyr)
@@ -13,24 +13,37 @@ library(interactions)
 hgd()
 hgd_browse()
 
-data <- read.csv2(file = "Severity_Analysis/train_geo.csv", sep = ",")
+##### loading in data ##### 
+data <- read.csv2(file = "toledo files/Assignment.csv", sep = ",")
+dataM <- read.csv2(file = "Frequency_Analysis/Data.csv", sep = ",")
+
+
 belgium_shape_sf <- st_read('Severity_Analysis//shape file Belgie postcodes//npc96_region_Project1.shp', quiet = TRUE)
 belgium_shape_sf <- st_transform(belgium_shape_sf, "+proj=longlat +datum=WGS84")
 class(belgium_shape_sf)
 
-# factorize 
+data$geo <- dataM$geo
+data$group_ageph <- dataM$agephGR
+names(data) <- c("ageph", "postal", "expo", "lnexpo", "freq", 
+                "annfreq", "claimAm", "agecar", "sexph", "fuel",
+                 "split", "use", "fleet", "sportc", "cover", "power",
+                 "geo", "group_ageph"
+)
+
+
+#### setting to the right type ###
 Data <- as.data.frame(data)
-train <- Data %>% select(-X, -long, -lat) %>%
- mutate(across(c(claimAm,  ageph), as.numeric)) %>%
- mutate(across(c(agecar, sexph, power, split, fuel, use, fleet, sportc, cover, agephGR, geo), as.factor))
+train <- Data %>%mutate(across(c(claimAm,  ageph), as.numeric)) %>%
+ mutate(across(c(agecar, sexph, power, split, fuel, use, fleet, sportc, cover, group_ageph, geo), as.factor))
 
-#take elements with claimam and create logclaimam variable 
+#### take elements with claimam and create logclaimam variable #### 
 train_nozero <- subset(train, Data$claimAm != 0)
-train
-
+train_nozero$logclaimAm <- log(train_nozero$claimAm)
 
 str(train_nozero)
 dim(train_nozero)
+
+
 
 ######### exploratory data analysis ##############
 #plot density claimAm 
@@ -83,10 +96,7 @@ labs(fill = "relative claim amount") +
 scale_fill_brewer(palette = "Blues", na.value = "white") +
 theme_bw()
 
-#basic plots for variables
-
-train_nozero %>% plot_bar()
-train_nozero %>% plot_histogram()
+#interaction effects 
 
 train_nozero1 <- train_nozero%>% select(-logclaimAm)
 Data_group <- splitmix(train_nozero)

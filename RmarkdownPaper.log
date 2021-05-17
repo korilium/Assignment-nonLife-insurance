@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999993 (TeX Live 2021/W32TeX) (preloaded format=xelatex 2021.5.11)  16 MAY 2021 14:03
+This is XeTeX, Version 3.141592653-2.6-0.999993 (TeX Live 2021/W32TeX) (preloaded format=xelatex 2021.5.11)  17 MAY 2021 00:11
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -437,10 +437,7 @@ LaTeX Warning: Label `fig:1' multiply defined.
 LaTeX Warning: Label `sub@fig:1' multiply defined.
 
 
-LaTeX Warning: Label `fig:sub2' multiply defined.
-
-
-LaTeX Warning: Label `sub@fig:sub2' multiply defined.
+LaTeX Warning: Label `tab:table2' multiply defined.
 
 
 LaTeX Warning: Label `fig:1' multiply defined.
@@ -872,6 +869,9 @@ LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(3)/m/n' will be
 
 ]
 Chapter 1.
+[2
+
+]
 File: Frequency_Analysis/Final documents/Text/CopyOfF1 - Claim frequency data -
  UNBINNED spatial.png Graphic file (type bmp)
 <Frequency_Analysis/Final documents/Text/CopyOfF1 - Claim frequency data - UNBI
@@ -879,21 +879,15 @@ NNED spatial.png>
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[2
-
-]
+[3]
 File: Frequency_Analysis/Final documents/Text/F2.png Graphic file (type bmp)
 <Frequency_Analysis/Final documents/Text/F2.png>
 File: Frequency_Analysis/Final documents/Text/F3.png Graphic file (type bmp)
 <Frequency_Analysis/Final documents/Text/F3.png>
-[3] [4]
+[4] [5]
 File: Frequency_Analysis/Final documents/Text/F4.png Graphic file (type bmp)
 <Frequency_Analysis/Final documents/Text/F4.png>
-[5]
-
-LaTeX Warning: Reference `fig:frequency' on page 6 undefined on input line 247.
-
-
+[6]
 File: Frequency_Analysis/Final documents/Exploratory/Exploratory - relative Fre
 quency.png Graphic file (type bmp)
 <Frequency_Analysis/Final documents/Exploratory/Exploratory - relative Frequenc
@@ -901,41 +895,32 @@ y.png>
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[6]
+[7] [8]
 File: Severity_Analysis/plots/exploratory/density.png Graphic file (type bmp)
 <Severity_Analysis/plots/exploratory/density.png>
 File: Severity_Analysis/plots/exploratory/county.png Graphic file (type bmp)
 <Severity_Analysis/plots/exploratory/county.png>
-
-LaTeX Warning: `!h' float specifier changed to `!ht'.
-
-[7]
+[9]
 File: Severity_Analysis/plots/exploratory/barplots.png Graphic file (type bmp)
 <Severity_Analysis/plots/exploratory/barplots.png>
-[8] [9]
+[10]
 File: Severity_Analysis/plots/exploratory/dendogram.png Graphic file (type bmp)
 
 <Severity_Analysis/plots/exploratory/dendogram.png>
 File: Frequency_Analysis/Final documents/GLM/Relation agephGR - split kopie.png
  Graphic file (type bmp)
 <Frequency_Analysis/Final documents/GLM/Relation agephGR - split kopie.png>
-[10] [11]
+[11] [12]
 Chapter 2.
-
-LaTeX Warning: Reference `fig:GLM results' on page 12 undefined on input line 4
-40.
-
-Missing character: There is no ∼ (U+223C) in font [lmroman12-regular]:mapping=t
-ex-text;!
-[12
+[13
 
 ]
 File: Frequency_Analysis/Final documents/Text/F7.png Graphic file (type bmp)
 <Frequency_Analysis/Final documents/Text/F7.png>
-[13]
+[14]
 File: Frequency_Analysis/Final documents/Text/F10.png Graphic file (type bmp)
 <Frequency_Analysis/Final documents/Text/F10.png>
-[14]
+[15]
 File: Frequency_Analysis/Final documents/Text/F10 - Screenshot Excel GBM.png Gr
 aphic file (type bmp)
 <Frequency_Analysis/Final documents/Text/F10 - Screenshot Excel GBM.png>
@@ -952,7 +937,7 @@ ance - GBM_perf.png Graphic file (type bmp)
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[15]
+[16]
 File: Frequency_Analysis/Final documents/Text/F14 - summary gbm_perf.png Graphi
 c file (type bmp)
 <Frequency_Analysis/Final documents/Text/F14 - summary gbm_perf.png>
@@ -967,13 +952,13 @@ File: Frequency_Analysis/Final documents/Text/F16 - Partial Dependency Plots -
 GBM.png Graphic file (type bmp)
 <Frequency_Analysis/Final documents/Text/F16 - Partial Dependency Plots - GBM.p
 ng>
-[16] [17] [18]
+[17] [18] [19]
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(1)/m/n' will be
-(Font)              scaled to size 5.0pt on input line 688.
+(Font)              scaled to size 5.0pt on input line 770.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(2)/m/n' will be
-(Font)              scaled to size 5.00046pt on input line 688.
+(Font)              scaled to size 5.00046pt on input line 770.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(3)/m/n' will be
-(Font)              scaled to size 4.99947pt on input line 688.
+(Font)              scaled to size 4.99947pt on input line 770.
 File: Severity_Analysis/plots/GLM/AIC/best_models.png Graphic file (type bmp)
 <Severity_Analysis/plots/GLM/AIC/best_models.png>
 File: Severity_Analysis/plots/GLM/BIC/best_model.png Graphic file (type bmp)
@@ -981,7 +966,7 @@ File: Severity_Analysis/plots/GLM/BIC/best_model.png Graphic file (type bmp)
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[19]
+[20]
 File: Severity_Analysis/plots/GLM/AIC/evidence_weight.png Graphic file (type bm
 p)
 <Severity_Analysis/plots/GLM/AIC/evidence_weight.png>
@@ -1000,13 +985,13 @@ File: Severity_Analysis/plots/GLM/BIC/variable_selection.png Graphic file (type
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[20] [21]
-Overfull \hbox (2.54895pt too wide) in paragraph at lines 791--793
+[21] [22]
+Overfull \hbox (2.54895pt too wide) in paragraph at lines 873--875
 []$[]$ 
  []
 
 
-Overfull \hbox (21.16928pt too wide) in paragraph at lines 798--800
+Overfull \hbox (21.16928pt too wide) in paragraph at lines 880--882
 []$[]$ 
  []
 
@@ -1018,12 +1003,22 @@ p)
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[22] [23]
+[23] [24]
 Chapter 3.
-[24
+[25
 
-] [25]
+]
+File: Rplot02.png Graphic file (type bmp)
+<Rplot02.png>
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[26] [27]
 Chapter 4.
+[28
+
+]
+Chapter 5.
 File: Frequency_Analysis/Final documents/Text/F8.1.png Graphic file (type bmp)
 <Frequency_Analysis/Final documents/Text/F8.1.png>
 File: Frequency_Analysis/Final documents/Text/F8.2.png Graphic file (type bmp)
@@ -1031,32 +1026,29 @@ File: Frequency_Analysis/Final documents/Text/F8.2.png Graphic file (type bmp)
 File: Frequency_Analysis/Final documents/Text/F9.png Graphic file (type bmp)
 <Frequency_Analysis/Final documents/Text/F9.png>
 
-Overfull \hbox (2.6289pt too wide) in paragraph at lines 990--993
+Overfull \hbox (2.6289pt too wide) in paragraph at lines 1095--1098
 [] []
  []
 
-(./RmarkdownPaper.bbl [26
+(./RmarkdownPaper.bbl [29
 
 ]
 Overfull \vbox (40.11296pt too high) has occurred while \output is active []
 
-[27]) [28
+[30]) [31
 
 ] (./RmarkdownPaper.aux)
-
-LaTeX Warning: There were undefined references.
-
 
 LaTeX Warning: There were multiply-defined labels.
 
  ) 
 Here is how much of TeX's memory you used:
- 20064 strings out of 476775
- 367580 string characters out of 5823061
- 851134 words of memory out of 5000000
- 39872 multiletter control sequences out of 15000+600000
+ 20075 strings out of 476775
+ 367727 string characters out of 5823061
+ 851371 words of memory out of 5000000
+ 39882 multiletter control sequences out of 15000+600000
  410850 words of font info for 87 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
  85i,15n,121p,519b,528s stack positions out of 5000i,500n,10000p,200000b,80000s
 
-Output written on RmarkdownPaper.pdf (29 pages).
+Output written on RmarkdownPaper.pdf (32 pages).
