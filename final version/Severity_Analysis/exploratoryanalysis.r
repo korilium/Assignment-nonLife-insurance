@@ -1,3 +1,10 @@
+
+
+#students: Mathijs Gerits, Dieter Maes, Ignace Decocq
+#student numbers: r848304, r0853946, r0811036
+
+
+
 ##### libraries #####
 library(gridExtra)
 library(ggplot2)

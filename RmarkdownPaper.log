@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999993 (TeX Live 2021/W32TeX) (preloaded format=xelatex 2021.5.11)  17 MAY 2021 09:31
+This is XeTeX, Version 3.141592653-2.6-0.999993 (TeX Live 2021/W32TeX) (preloaded format=xelatex 2021.5.11)  17 MAY 2021 13:29
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -453,6 +453,9 @@ LaTeX Warning: Label `sub@fig:sub2' multiply defined.
 
 
 LaTeX Warning: Label `tab:table2' multiply defined.
+
+
+LaTeX Warning: Label `fig:histogram ' multiply defined.
 
 )
 \openout1 = `RmarkdownPaper.aux'.
@@ -1013,12 +1016,21 @@ File: Rplot02.png Graphic file (type bmp)
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[26] [27]
+File: Rplot02.png Graphic file (type bmp)
+<Rplot02.png>
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[26] [27] [28]
 Chapter 4.
-[28
+[29
 
 ]
 Chapter 5.
+[30
+
+]
+Chapter 6.
 File: Frequency_Analysis/Final documents/Text/F8.1.png Graphic file (type bmp)
 <Frequency_Analysis/Final documents/Text/F8.1.png>
 File: Frequency_Analysis/Final documents/Text/F8.2.png Graphic file (type bmp)
@@ -1026,16 +1038,16 @@ File: Frequency_Analysis/Final documents/Text/F8.2.png Graphic file (type bmp)
 File: Frequency_Analysis/Final documents/Text/F9.png Graphic file (type bmp)
 <Frequency_Analysis/Final documents/Text/F9.png>
 
-Overfull \hbox (2.6289pt too wide) in paragraph at lines 1095--1098
+Overfull \hbox (2.6289pt too wide) in paragraph at lines 1117--1120
 [] []
  []
 
-(./RmarkdownPaper.bbl [29
+(./RmarkdownPaper.bbl [31
 
 ]
 Overfull \vbox (40.11296pt too high) has occurred while \output is active []
 
-[30]) [31
+[32]) [33
 
 ] (./RmarkdownPaper.aux)
 
@@ -1043,12 +1055,12 @@ LaTeX Warning: There were multiply-defined labels.
 
  ) 
 Here is how much of TeX's memory you used:
- 20075 strings out of 476775
- 367727 string characters out of 5823061
- 851350 words of memory out of 5000000
- 39882 multiletter control sequences out of 15000+600000
+ 20077 strings out of 476775
+ 367747 string characters out of 5823061
+ 851417 words of memory out of 5000000
+ 39884 multiletter control sequences out of 15000+600000
  410850 words of font info for 87 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
  85i,15n,121p,519b,528s stack positions out of 5000i,500n,10000p,200000b,80000s
 
-Output written on RmarkdownPaper.pdf (32 pages).
+Output written on RmarkdownPaper.pdf (34 pages).

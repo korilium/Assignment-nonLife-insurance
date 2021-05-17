@@ -12,8 +12,9 @@ output:
 fontsize: 12pt
 geometry: margin = 1in
 bibliography: bibliography.bib
-date: "17/05/2021"
+date: "student number: r848304, r0853946, r0811036"
 author: "Mathijs Gerits, Dieter Maes, Ignace Decocq"
+
 ---
 \newpage
 \tableofcontents

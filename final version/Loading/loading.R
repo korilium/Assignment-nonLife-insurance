@@ -1,3 +1,9 @@
+
+
+#students: Mathijs Gerits, Dieter Maes, Ignace Decocq
+#student numbers: r848304, r0853946, r0811036
+
+
 library(ggplot2)
 library(dplyr)
 library(DataExplorer)
