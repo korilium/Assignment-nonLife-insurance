@@ -544,6 +544,12 @@ For the calculation of the risk premium, the expected value premium principle wi
   \label{fig:histogram }
 \end{figure}
 
+\begin{figure}[h!]
+  \includegraphics[width=\linewidth]{Rplot02.png}
+  \caption{Histogram: predictive distribution of the future losses}
+  \label{fig:histogram }
+\end{figure}
+
 $$ \phi  = \frac{C – \sum{E(Y_i)}}{\sum{E(Y_i)}} $$
 
 $\phi$ Can then be inserted in in the expected value premium principle, so that the risk loading and total risk premium can be calculated for each individual policy. 
@@ -552,6 +558,13 @@ $\phi$ Can then be inserted in in the expected value premium principle, so that 
 # Conclusion 
 
 After thoroughly analysing the data, a model is build to predict the future losses. This model has a frequency and severity part. To model the frequency a GLM and GBM were constructed. Out of the GLM and GBM, the GLM was most suitable to model the frequency. Both the GLM and GBM were an equally good fit, but the GLM was less complex. To model the severity a GLM and Random Forest were used. The GLM preformed better on the testset than the Random Forest.  Thus the GLM was preferred to model the severity. These GLMs were then used to calculate a pure premium. On this pure premium a risk loading was added.  This risk loading was calculated using the expected value premium principle. A top down approach suggested by Yang was used to calculate the risk loading parameters.  
+
+
+# Conclusion 
+
+After thoroughly analysing the data, a model is build to predict the future losses. This model has a frequency and severity part. To model the frequency a GLM and GBM were constructed. Out of the GLM and GBM, the GLM was most suitable to model the frequency. Both the GLM and GBM were an equally good fit, but the GLM was less complex. To model the severity a GLM and Random Forest were used. The GLM preformed better on the trainset than the Random Forest.  Thus the GLM was preferred to model the severity. These GLMs were then used to calculate a pure premium. On this pure premium a risk loading was added.  This risk loading was calculated using the expected value premium principle. A top down approach suggest by Yang was used to calculate the risk loading parameters.  
+
+
 
 
 # Appendix
