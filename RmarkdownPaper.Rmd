@@ -1,5 +1,5 @@
 ---
-title: "Assignment tariff plan non-life insurance     | ![](logo.jpg){width=30%}"
+title: "Assignment tariff plan non-life insurance  ![](logo.jpg){width=30%}"
 documentclass: report
 header-includes:
 output: 
@@ -12,7 +12,7 @@ output:
 fontsize: 12pt
 geometry: margin = 1in
 bibliography: bibliography.bib
-date: "11/05/2021"
+date: "17/05/2021"
 author: "Mathijs Gerits, Dieter Maes, Ignace Decocq"
 ---
 \newpage
@@ -21,7 +21,7 @@ author: "Mathijs Gerits, Dieter Maes, Ignace Decocq"
 
 # Introduction
 
-The goal of this report is to explain the model built to set a risk premium, calculated for each single policy holder. Such explanation is necessary to inform all stakeholders about the process that goes into price setting in an insurance context. Different characteristics of a policyholder will be taken into account, delivered in a dataset of 160 000+ observations. For each observation the following information about the policy holder or the car is noted: 
+The goal of this report is to explain the model built to set a risk premium, calculated for each single policy holder. The goal of this report is to inform all stakeholders about the process that goes into price setting in an insurance context. Different characteristics of a policyholder will be taken into account, delivered in a dataset of 160 000+ observations. For each observation the following information about the policy holder or the car is noted: 
 
 \begin{table}[h!]
   \begin{center}
@@ -48,7 +48,7 @@ The goal of this report is to explain the model built to set a risk premium, cal
   \end{center}
 \end{table}
 
-This dataset combined with a dataset containing spatial data about each city in Belgium will constitute to the foundations of modelling the risk premium for each policy holder. Different steps are needed to make a well performing pricing model. To start, raw data should be processed to make it usable for modelling. Then, use the processed data to get a first idea for the data and possible its distributional quantities. Further, the gained knowledge is used to model frequency (claim count) and severity (claim amount) individually with different models. To set a technical premium, the best model for each aspect is chosen and applied to the data to make predictions for each policy holder. Both predictions multiplied yield the technical premium. To end, a certain quantitatively determined safety loading is added to the technical premium, which then gives the risk premium. Obviously, this will not immediately equal the commercial premium which will actually be charged to policy holders, but this step is left for another department specialized in the commercial aspect of insurance. 
+This dataset combined with a dataset containing spatial data about each city in Belgium will constitute to the foundations of modeling the risk premium for each policy holder. Different steps are needed to make a well performing pricing model. To start, raw data should be processed to make it usable for modeling. Then, use the processed data to get a first idea for the data and possible its distributional quantities. Further, the gained knowledge is used to model frequency (claim count) and severity (claim amount) individually with different models. To set a technical premium, the best model for each aspect is chosen and applied to the data to make predictions for each policy holder. multiplying both predictions yield the technical premium. To end, a certain quantitatively determined safety loading is added to the technical premium, which then gives the risk premium. Obviously, this will not immediately equal the commercial premium which will actually be charged to policy holders, but this step is left for another department specialized in the commercial aspect of insurance. 
 
 
 ## Binning of Spatial Data 
